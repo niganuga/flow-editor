@@ -8,6 +8,7 @@ import { FileValidatorPanel } from "@/components/panels/file-validator-panel"
 import { UpscalerPanel } from "@/components/panels/upscaler-panel"
 import { BgRemoverPanel } from "@/components/panels/bg-remover-panel"
 import { CropperPanel } from "@/components/panels/cropper-panel"
+import { AIChatPanel } from "@/components/panels/ai-chat-panel"
 
 export type Tool =
   | "validator"
@@ -18,11 +19,12 @@ export type Tool =
   | "color-knockout"
   | "recolor"
   | "blend"
+  | "ai-chat"
+  | "canvas"
 
 export default function PhotoEditorPage() {
   const [activeTool, setActiveTool] = useState<Tool | null>(null)
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null)
-  const [openPanels, setOpenPanels] = useState<Set<Tool>>(new Set())
+  const [openPanels, setOpenPanels] = useState<Set<Tool>>(new Set(["canvas"]))
 
   const handleToolClick = (tool: Tool) => {
     setActiveTool(tool)
@@ -48,29 +50,19 @@ export default function PhotoEditorPage() {
     }
   }
 
-  const handleImageUpload = (imageUrl: string) => {
-    setUploadedImage(imageUrl)
-  }
-
   return (
     <div className="h-screen flex flex-col bg-background">
       <TopBar />
 
-      <Canvas uploadedImage={uploadedImage} onImageUpload={handleImageUpload} />
+      <main className="flex-1 grid-background overflow-hidden relative" />
 
-      {/* Tool Panels */}
-      {openPanels.has("validator") && (
-        <FileValidatorPanel onClose={() => handleClosePanel("validator")} imageUrl={uploadedImage} />
-      )}
-      {openPanels.has("upscaler") && (
-        <UpscalerPanel onClose={() => handleClosePanel("upscaler")} imageUrl={uploadedImage} />
-      )}
-      {openPanels.has("bg-remover") && (
-        <BgRemoverPanel onClose={() => handleClosePanel("bg-remover")} imageUrl={uploadedImage} />
-      )}
-      {openPanels.has("cropper") && (
-        <CropperPanel onClose={() => handleClosePanel("cropper")} imageUrl={uploadedImage} />
-      )}
+      {openPanels.has("canvas") && <Canvas onClose={() => handleClosePanel("canvas")} />}
+
+      {openPanels.has("validator") && <FileValidatorPanel onClose={() => handleClosePanel("validator")} />}
+      {openPanels.has("upscaler") && <UpscalerPanel onClose={() => handleClosePanel("upscaler")} />}
+      {openPanels.has("bg-remover") && <BgRemoverPanel onClose={() => handleClosePanel("bg-remover")} />}
+      {openPanels.has("cropper") && <CropperPanel onClose={() => handleClosePanel("cropper")} />}
+      {openPanels.has("ai-chat") && <AIChatPanel onClose={() => handleClosePanel("ai-chat")} />}
 
       <BottomDock activeTool={activeTool} onToolClick={handleToolClick} />
     </div>

@@ -1,6 +1,16 @@
 "use client"
 
-import { FileCheck, ArrowUpCircle, Eraser, Crop, ArrowDownCircle, Droplet, Palette, Layers } from "lucide-react"
+import {
+  FileCheck,
+  ArrowUpCircle,
+  Eraser,
+  Crop,
+  ArrowDownCircle,
+  Droplet,
+  Palette,
+  Layers,
+  Sparkles,
+} from "lucide-react"
 import type { Tool } from "@/app/page"
 import { useState } from "react"
 
@@ -18,18 +28,19 @@ const tools = [
   { id: "color-knockout" as Tool, icon: Droplet, label: "Color Knockout" },
   { id: "recolor" as Tool, icon: Palette, label: "Recolor" },
   { id: "blend" as Tool, icon: Layers, label: "Blend+Texture" },
+  { id: "ai-chat" as Tool, icon: Sparkles, label: "AI Chat" },
 ]
 
 export function BottomDock({ activeTool, onToolClick }: BottomDockProps) {
   const [hoveredTool, setHoveredTool] = useState<Tool | null>(null)
 
   return (
-    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
       <div
-        className="rounded-2xl p-4 bg-card border-[5px] border-foreground"
-        style={{ boxShadow: "10px 10px 0px 0px rgba(0, 0, 0, 1)" }}
+        className="rounded-2xl p-3 bg-card border-[4px] border-foreground"
+        style={{ boxShadow: "8px 8px 0px 0px rgba(0, 0, 0, 1)" }}
       >
-        <div className="flex gap-4">
+        <div className="flex gap-3">
           {tools.map((tool) => {
             const Icon = tool.icon
             const isActive = activeTool === tool.id
@@ -50,7 +61,7 @@ export function BottomDock({ activeTool, onToolClick }: BottomDockProps) {
                   onMouseEnter={() => setHoveredTool(tool.id)}
                   onMouseLeave={() => setHoveredTool(null)}
                   className={`
-                    rounded-xl w-16 h-16 flex items-center justify-center
+                    rounded-xl w-14 h-14 flex items-center justify-center
                     border-[3px] border-foreground transition-all duration-100
                     ${isActive ? "bg-accent text-accent-foreground" : "bg-card"}
                   `}
@@ -68,7 +79,7 @@ export function BottomDock({ activeTool, onToolClick }: BottomDockProps) {
                   }}
                 >
                   <Icon
-                    className="w-7 h-7"
+                    className="w-6 h-6"
                     strokeWidth={2.5}
                     style={{ color: isHovered && !isActive ? "white" : undefined }}
                   />
