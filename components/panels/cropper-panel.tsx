@@ -7,9 +7,12 @@ import { Button } from "@/components/ui/button"
 interface CropperPanelProps {
   onClose: () => void
   imageUrl: string | null
+  zIndex?: number
+  isActive?: boolean
+  onFocus?: () => void
 }
 
-export function CropperPanel({ onClose, imageUrl }: CropperPanelProps) {
+export function CropperPanel({ onClose, imageUrl, zIndex, isActive, onFocus }: CropperPanelProps) {
   const [aspectRatio, setAspectRatio] = useState<string>("free")
 
   const ratios = [
@@ -20,7 +23,7 @@ export function CropperPanel({ onClose, imageUrl }: CropperPanelProps) {
   ]
 
   return (
-    <DraggablePanel title="Cropper" onClose={onClose} defaultPosition={{ x: 250, y: 250 }}>
+    <DraggablePanel title="Cropper" onClose={onClose} defaultPosition={{ x: 250, y: 250 }} zIndex={zIndex} isActive={isActive} onFocus={onFocus}>
       <div className="p-8 space-y-6">
         <div className="space-y-4">
           <label className="font-bold text-base">Aspect Ratio</label>

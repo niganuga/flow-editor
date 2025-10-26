@@ -1,0 +1,345 @@
+{
+  "info": {
+    "_postman_id": "replicate-api-collection",
+    "name": "Flow Editor - Replicate API",
+    "description": "Collection for testing Replicate API integration",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "Predictions",
+      "item": [
+        {
+          "name": "Create Prediction - Remove Background",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": \"qwen/qwen-image-edit-plus\",\n  \"input\": {\n    \"image\": [\"https://example.com/photo.jpg\"],\n    \"prompt\": \"Remove the background and make it transparent\",\n    \"guidance_scale\": 7.5,\n    \"num_inference_steps\": 50\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/replicate/predictions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "replicate", "predictions"]
+            },
+            "description": "Create a new prediction to remove image background"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Prediction - Pose Transfer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": \"qwen/qwen-image-edit-plus\",\n  \"input\": {\n    \"image\": [\n      \"https://example.com/reference-pose.jpg\",\n      \"https://example.com/target-person.jpg\"\n    ],\n    \"prompt\": \"Transfer the yoga pose from image 1 to image 2\",\n    \"guidance_scale\": 8.0,\n    \"num_inference_steps\": 75\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/replicate/predictions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "replicate", "predictions"]
+            },
+            "description": "Create a prediction for pose transfer between two images"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Prediction - With Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": \"qwen/qwen-image-edit-plus\",\n  \"input\": {\n    \"image\": [\"https://example.com/photo.jpg\"],\n    \"prompt\": \"Increase brightness and saturation by 20%\",\n    \"guidance_scale\": 7.5,\n    \"num_inference_steps\": 50\n  },\n  \"webhook\": \"{{webhook_url}}\",\n  \"webhook_events_filter\": [\"start\", \"completed\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/replicate/predictions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "replicate", "predictions"]
+            },
+            "description": "Create a prediction with webhook notification for async updates"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Prediction - Multiple Outputs",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": \"qwen/qwen-image-edit-plus\",\n  \"input\": {\n    \"image\": [\"https://example.com/photo.jpg\"],\n    \"prompt\": \"Apply a summer filter\",\n    \"num_outputs\": 3,\n    \"guidance_scale\": 7.5,\n    \"num_inference_steps\": 50\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/replicate/predictions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "replicate", "predictions"]
+            },
+            "description": "Create a prediction with 3 output variations"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Prediction Status",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/replicate/predictions/{{prediction_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "replicate", "predictions", "{{prediction_id}}"]
+            },
+            "description": "Get current status of a prediction"
+          },
+          "response": []
+        },
+        {
+          "name": "List Predictions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/replicate/predictions?limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "replicate", "predictions"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "List all predictions for authenticated user"
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Prediction",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/api/replicate/predictions/{{prediction_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "replicate", "predictions", "{{prediction_id}}"]
+            },
+            "description": "Cancel an in-progress prediction"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Webhooks",
+      "item": [
+        {
+          "name": "Send Test Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"status\": \"succeeded\",\n  \"output\": {\n    \"images\": [\"https://replicate.delivery/pbxt/abc123/result.jpg\"]\n  },\n  \"error\": null,\n  \"created_at\": \"2024-10-20T10:30:00Z\",\n  \"completed_at\": \"2024-10-20T10:45:30Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/webhooks/replicate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "webhooks", "replicate"]
+            },
+            "description": "Test webhook endpoint with sample payload"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Use Cases",
+      "item": [
+        {
+          "name": "Workflow - Remove Background",
+          "item": [
+            {
+              "name": "1. Create background removal prediction",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"version\": \"qwen/qwen-image-edit-plus\",\n  \"input\": {\n    \"image\": [\"{{image_url}}\"],\n    \"prompt\": \"Remove the background completely. The background should be transparent. Keep only the main subject.\",\n    \"guidance_scale\": 8.0,\n    \"num_inference_steps\": 75\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/replicate/predictions",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "replicate", "predictions"]
+                }
+              }
+            },
+            {
+              "name": "2. Poll for completion",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/api/replicate/predictions/{{prediction_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "replicate", "predictions", "{{prediction_id}}"]
+                }
+              }
+            },
+            {
+              "name": "3. Download result",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{result_url}}",
+                  "host": ["{{result_url}}"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Workflow - Product Mockup",
+          "item": [
+            {
+              "name": "1. Create mockup prediction",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"version\": \"qwen/qwen-image-edit-plus\",\n  \"input\": {\n    \"image\": [\"{{template_url}}\"],\n    \"prompt\": \"Create a professional product mockup. Add a {{product_type}} on the template. Style: {{style}}. Color scheme: {{color_scheme}}. High quality product photography style.\",\n    \"guidance_scale\": 8.5,\n    \"num_inference_steps\": 100\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/replicate/predictions",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "replicate", "predictions"]
+                }
+              }
+            },
+            {
+              "name": "2. Check status",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/api/replicate/predictions/{{prediction_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "replicate", "predictions", "{{prediction_id}}"]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "prediction_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "image_url",
+      "value": "https://example.com/photo.jpg",
+      "type": "string"
+    },
+    {
+      "key": "webhook_url",
+      "value": "https://example.com/webhooks/replicate",
+      "type": "string"
+    },
+    {
+      "key": "result_url",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "template_url",
+      "value": "https://example.com/template.jpg",
+      "type": "string"
+    },
+    {
+      "key": "product_type",
+      "value": "laptop",
+      "type": "string"
+    },
+    {
+      "key": "style",
+      "value": "minimalist",
+      "type": "string"
+    },
+    {
+      "key": "color_scheme",
+      "value": "blue and white",
+      "type": "string"
+    }
+  ],
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Extract prediction ID for subsequent requests",
+          "if (pm.response.code === 201) {",
+          "  var jsonData = pm.response.json();",
+          "  pm.environment.set('prediction_id', jsonData.id);",
+          "  console.log('Prediction ID set to:', jsonData.id);",
+          "}",
+          "",
+          "// Set result URL when prediction is completed",
+          "if (pm.response.code === 200) {",
+          "  var jsonData = pm.response.json();",
+          "  if (jsonData.status === 'succeeded' && jsonData.output.images) {",
+          "    pm.environment.set('result_url', jsonData.output.images[0]);",
+          "  }",
+          "}"
+        ]
+      }
+    }
+  ]
+}

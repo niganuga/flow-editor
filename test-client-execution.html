@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Client-Side Tool Execution</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .panel {
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      padding: 15px;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+      border: 1px solid #eee;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .log {
+      background: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .log-entry {
+      margin: 5px 0;
+      padding: 5px;
+      background: white;
+      border-left: 3px solid #007bff;
+    }
+    .error {
+      border-left-color: #dc3545;
+      color: #dc3545;
+    }
+    .success {
+      border-left-color: #28a745;
+      color: #28a745;
+    }
+  </style>
+</head>
+<body>
+  <h1>Client-Side Tool Execution Test</h1>
+
+  <div class="container">
+    <div class="panel">
+      <h2>Original Image</h2>
+      <input type="file" id="fileInput" accept="image/*">
+      <div id="originalImage" style="margin-top: 10px;"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Processed Image</h2>
+      <div id="processedImage"></div>
+    </div>
+  </div>
+
+  <div style="margin-top: 20px;">
+    <h3>Test Controls</h3>
+    <button id="testColorKnockout" disabled>Test Color Knockout (Remove White)</button>
+    <button id="testRecolor" disabled>Test Recolor (Make Blue)</button>
+    <button id="testTexture" disabled>Test Texture Cut</button>
+  </div>
+
+  <div style="margin-top: 20px;">
+    <h3>Execution Log</h3>
+    <div id="log" class="log"></div>
+  </div>
+
+  <script type="module">
+    // Import client-side tool executor
+    const log = (message, type = 'info') => {
+      const logDiv = document.getElementById('log');
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logDiv.appendChild(entry);
+      logDiv.scrollTop = logDiv.scrollHeight;
+      console.log(message);
+    };
+
+    let currentImageUrl = null;
+
+    // File input handler
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const url = URL.createObjectURL(file);
+      currentImageUrl = url;
+
+      const img = document.createElement('img');
+      img.src = url;
+      document.getElementById('originalImage').innerHTML = '';
+      document.getElementById('originalImage').appendChild(img);
+
+      // Enable test buttons
+      document.getElementById('testColorKnockout').disabled = false;
+      document.getElementById('testRecolor').disabled = false;
+      document.getElementById('testTexture').disabled = false;
+
+      log('Image loaded successfully', 'success');
+    });
+
+    // Test Color Knockout
+    document.getElementById('testColorKnockout').addEventListener('click', async () => {
+      if (!currentImageUrl) return;
+
+      log('Testing Color Knockout: Removing white color...');
+
+      try {
+        // Create canvas to analyze image
+        const img = new Image();
+        img.src = currentImageUrl;
+        await new Promise(resolve => img.onload = resolve);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+
+        // Simulate tool parameters
+        const params = {
+          colors: [
+            { r: 255, g: 255, b: 255, hex: '#ffffff' }
+          ],
+          tolerance: 30,
+          replaceMode: 'transparency'
+        };
+
+        log('Executing color knockout with params: ' + JSON.stringify(params));
+
+        // Import and execute the tool
+        const module = await import('/lib/tools/color-knockout.js');
+        const blob = await module.performColorKnockout({
+          imageUrl: currentImageUrl,
+          selectedColors: params.colors,
+          settings: {
+            tolerance: params.tolerance,
+            replaceMode: params.replaceMode,
+            feather: 0,
+            antiAliasing: true,
+            edgeSmoothing: 0.5
+          },
+          onProgress: (progress, msg) => {
+            log(`Progress: ${progress}% - ${msg}`);
+          }
+        });
+
+        const resultUrl = URL.createObjectURL(blob);
+        const resultImg = document.createElement('img');
+        resultImg.src = resultUrl;
+        document.getElementById('processedImage').innerHTML = '';
+        document.getElementById('processedImage').appendChild(resultImg);
+
+        log('Color knockout completed successfully!', 'success');
+      } catch (error) {
+        log('Error: ' + error.message, 'error');
+      }
+    });
+
+    // Test Recolor
+    document.getElementById('testRecolor').addEventListener('click', async () => {
+      if (!currentImageUrl) return;
+
+      log('Testing Recolor: Making image blue...');
+
+      try {
+        // Import and execute the tool
+        const module = await import('/lib/tools/recolor.js');
+
+        // First extract colors
+        log('Extracting color palette...');
+        const palette = await module.extractColors(currentImageUrl, {
+          paletteSize: 9,
+          algorithm: 'smart',
+          includeRareColors: false,
+          quality: 80
+        });
+
+        log('Palette extracted: ' + palette.length + ' colors');
+
+        // Create color mappings (make everything blue-ish)
+        const mappings = new Map();
+        palette.forEach((color, index) => {
+          // Map each color to a shade of blue
+          const blueShade = `#0000${Math.floor(100 + index * 15).toString(16)}`;
+          mappings.set(index, blueShade);
+        });
+
+        log('Applying blue color mapping...');
+
+        const blob = await module.recolorImage(currentImageUrl, palette, {
+          colorMappings: mappings,
+          blendMode: 'replace',
+          tolerance: 30,
+          preserveTransparency: true
+        });
+
+        const resultUrl = URL.createObjectURL(blob);
+        const resultImg = document.createElement('img');
+        resultImg.src = resultUrl;
+        document.getElementById('processedImage').innerHTML = '';
+        document.getElementById('processedImage').appendChild(resultImg);
+
+        log('Recolor completed successfully!', 'success');
+      } catch (error) {
+        log('Error: ' + error.message, 'error');
+      }
+    });
+
+    // Test Texture Cut
+    document.getElementById('testTexture').addEventListener('click', async () => {
+      if (!currentImageUrl) return;
+
+      log('Testing Texture Cut: Applying noise texture...');
+
+      try {
+        // Import and execute the tool
+        const module = await import('/lib/tools/texture-cut.js');
+
+        // Create noise texture
+        const textureUrl = module.createPatternTexture('noise', 200, 200, '#000000', 10);
+        log('Created noise texture');
+
+        const blob = await module.textureCut({
+          baseImageUrl: currentImageUrl,
+          textureUrl,
+          cutSettings: {
+            amount: 0.5,
+            featherPx: 0,
+            invert: false
+          },
+          transformSettings: {
+            scale: 1,
+            rotation: 0,
+            tile: false
+          },
+          onProgress: (progress, msg) => {
+            log(`Progress: ${progress}% - ${msg}`);
+          }
+        });
+
+        const resultUrl = URL.createObjectURL(blob);
+        const resultImg = document.createElement('img');
+        resultImg.src = resultUrl;
+        document.getElementById('processedImage').innerHTML = '';
+        document.getElementById('processedImage').appendChild(resultImg);
+
+        log('Texture cut completed successfully!', 'success');
+      } catch (error) {
+        log('Error: ' + error.message, 'error');
+      }
+    });
+
+    log('Test page ready. Please upload an image to begin.');
+  </script>
+</body>
+</html>

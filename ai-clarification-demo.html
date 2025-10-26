@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Clarification Message - Visual Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #fafaf8;
+      color: #000;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .demo-card {
+      max-width: 90vw;
+      margin: 0 auto 40px;
+      border-radius: 12px;
+      border: 3px solid #000;
+      background: #fff;
+      overflow: hidden;
+      box-shadow: 6px 6px 0px 0px #000;
+    }
+
+    .header {
+      background: #ff4f7d;
+      border-bottom: 3px solid #000;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header h3 {
+      font-size: 14px;
+      color: #000;
+      font-weight: bold;
+    }
+
+    .close-btn {
+      width: 24px;
+      height: 24px;
+      border: 2px solid #000;
+      background: transparent;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .content {
+      padding: 16px;
+    }
+
+    .section {
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: rgba(0,0,0,0.7);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .step-list {
+      list-style: none;
+      margin-left: 0;
+    }
+
+    .step-item {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .step-number {
+      min-width: 20px;
+      height: 20px;
+      background: #000;
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    .warning-box {
+      border: 3px solid #eab308;
+      background: rgba(234, 179, 8, 0.1);
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: 4px 4px 0px 0px rgba(234, 179, 8, 0.3);
+    }
+
+    .warning-box h4 {
+      font-size: 14px;
+      margin-bottom: 8px;
+      color: #854d0e;
+    }
+
+    .warning-text {
+      font-size: 12px;
+      color: #a16207;
+      margin-bottom: 4px;
+    }
+
+    .suggestion-box {
+      border: 3px solid #ff4f7d;
+      background: rgba(255, 79, 125, 0.1);
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: 4px 4px 0px 0px rgba(255, 79, 125, 0.3);
+    }
+
+    .suggestion-box h4 {
+      font-size: 14px;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    .benefit-item {
+      font-size: 12px;
+      color: rgba(0,0,0,0.7);
+      margin-bottom: 4px;
+      display: flex;
+      gap: 6px;
+    }
+
+    .footer {
+      border-top: 3px solid rgba(0,0,0,0.1);
+      padding: 12px;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: bold;
+      border: 3px solid #000;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #ff4f7d;
+      color: #000;
+      box-shadow: 4px 4px 0px 0px #000;
+    }
+
+    .btn-primary:hover {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0px 0px #000;
+    }
+
+    .btn-secondary {
+      background: #000;
+      color: #fff;
+      box-shadow: 4px 4px 0px 0px #000;
+    }
+
+    .btn-secondary:hover {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0px 0px #000;
+    }
+
+    .btn-cancel {
+      background: #fafaf8;
+      color: #000;
+      border-color: rgba(0,0,0,0.3);
+      box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.2);
+    }
+
+    .keyboard-hint {
+      font-size: 12px;
+      color: rgba(0,0,0,0.4);
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    kbd {
+      padding: 2px 6px;
+      background: rgba(0,0,0,0.1);
+      border: 1px solid rgba(0,0,0,0.2);
+      border-radius: 3px;
+      font-family: monospace;
+    }
+
+    @media (max-width: 640px) {
+      .button-row {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>AI Clarification Message - Neobrutalist Design</h1>
+
+    <!-- Example with warning and suggestion -->
+    <div class="demo-card">
+      <div class="header">
+        <div>
+          <h3>✨ Let me confirm what you want</h3>
+        </div>
+        <button class="close-btn">×</button>
+      </div>
+
+      <div class="content">
+        <!-- User Request -->
+        <div class="section">
+          <div class="section-title">📋 Your Request:</div>
+          <ol class="step-list">
+            <li class="step-item">
+              <span class="step-number">1</span>
+              <span>Remove background</span>
+            </li>
+            <li class="step-item">
+              <span class="step-number">2</span>
+              <span>Resize to 800px width</span>
+            </li>
+            <li class="step-item">
+              <span class="step-number">3</span>
+              <span>Generate mockup on white t-shirt</span>
+            </li>
+          </ol>
+        </div>
+
+        <!-- Print Warning -->
+        <div class="section">
+          <div class="warning-box">
+            <h4>⚠️ Print Quality Warning</h4>
+            <div class="warning-text"><strong>Current:</strong> 1200x800px @ 72 DPI</div>
+            <div class="warning-text"><strong>Need:</strong> 3600x2400px @ 300 DPI</div>
+            <div style="margin-top: 8px; padding-top: 8px; border-top: 2px solid rgba(234, 179, 8, 0.3);">
+              <div class="warning-text">• Current resolution too low for print quality</div>
+              <div class="warning-text">• Image will appear pixelated when printed</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Suggestion -->
+        <div class="section">
+          <div class="suggestion-box">
+            <h4>💡 Suggested Workflow</h4>
+            <p style="font-size: 12px; color: rgba(0,0,0,0.7); margin-bottom: 12px;">
+              For best print quality, upscale first before mockup generation
+            </p>
+            <ol class="step-list">
+              <li class="step-item">
+                <span class="step-number">1</span>
+                <span>Upscale to 300 DPI (3600x2400px)</span>
+              </li>
+              <li class="step-item">
+                <span class="step-number">2</span>
+                <span>Remove background</span>
+              </li>
+              <li class="step-item">
+                <span class="step-number">3</span>
+                <span>Generate print-ready mockup</span>
+              </li>
+            </ol>
+            <div style="margin-top: 8px; padding-top: 8px; border-top: 2px solid rgba(255, 79, 125, 0.2);">
+              <p style="font-size: 12px; font-weight: 600; margin-bottom: 6px; color: rgba(0,0,0,0.6);">Benefits:</p>
+              <div class="benefit-item">✓ Print-ready quality (300 DPI)</div>
+              <div class="benefit-item">✓ Sharper mockup details</div>
+              <div class="benefit-item">✓ Professional output</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div class="button-row">
+          <button class="btn btn-primary">✓ Use Suggested</button>
+          <button class="btn btn-secondary">→ Use Original</button>
+          <button class="btn btn-cancel">Cancel</button>
+        </div>
+        <div class="keyboard-hint">
+          <kbd>Enter</kbd> to continue • <kbd>Esc</kbd> to cancel
+        </div>
+      </div>
+    </div>
+
+    <p style="text-align: center; color: rgba(0,0,0,0.5); font-size: 14px;">
+      This is a static HTML mockup. See the React component for full functionality.
+    </p>
+  </div>
+</body>
+</html>

@@ -4,12 +4,12 @@ import {
   FileCheck,
   ArrowUpCircle,
   Eraser,
-  Crop,
   ArrowDownCircle,
   Droplet,
   Palette,
   Layers,
   Sparkles,
+  History,
 } from "lucide-react"
 import type { Tool } from "@/app/page"
 import { useState } from "react"
@@ -23,24 +23,24 @@ const tools = [
   { id: "validator" as Tool, icon: FileCheck, label: "File Validator" },
   { id: "upscaler" as Tool, icon: ArrowUpCircle, label: "Upscaler" },
   { id: "bg-remover" as Tool, icon: Eraser, label: "BG Remover" },
-  { id: "cropper" as Tool, icon: Crop, label: "Cropper" },
   { id: "downscaler" as Tool, icon: ArrowDownCircle, label: "Downscaler" },
   { id: "color-knockout" as Tool, icon: Droplet, label: "Color Knockout" },
   { id: "recolor" as Tool, icon: Palette, label: "Recolor" },
-  { id: "blend" as Tool, icon: Layers, label: "Blend+Texture" },
+  { id: "blend" as Tool, icon: Layers, label: "Texture+Cut" },
   { id: "ai-chat" as Tool, icon: Sparkles, label: "AI Chat" },
+  { id: "history" as Tool, icon: History, label: "History" },
 ]
 
 export function BottomDock({ activeTool, onToolClick }: BottomDockProps) {
   const [hoveredTool, setHoveredTool] = useState<Tool | null>(null)
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
+    <div className="fixed bottom-2 left-1/2 -translate-x-1/2 z-50 w-full max-w-fit px-2">
       <div
-        className="rounded-2xl p-3 bg-card border-[4px] border-foreground"
-        style={{ boxShadow: "8px 8px 0px 0px rgba(0, 0, 0, 1)" }}
+        className="rounded-xl p-1.5 md:p-2 bg-card border-[2px] md:border-[3px] border-foreground mx-auto"
+        style={{ boxShadow: "3px 3px 0px 0px rgba(0, 0, 0, 1)" }}
       >
-        <div className="flex gap-3">
+        <div className="flex gap-1 md:gap-1.5 flex-wrap justify-center">
           {tools.map((tool) => {
             const Icon = tool.icon
             const isActive = activeTool === tool.id
@@ -50,8 +50,8 @@ export function BottomDock({ activeTool, onToolClick }: BottomDockProps) {
               <div key={tool.id} className="relative">
                 {isHovered && (
                   <div
-                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-4 py-2 bg-foreground text-background rounded-lg border-[3px] border-foreground whitespace-nowrap font-bold text-sm"
-                    style={{ boxShadow: "4px 4px 0px 0px rgba(0, 0, 0, 1)" }}
+                    className="hidden md:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-foreground text-background rounded-md border-[2px] border-foreground whitespace-nowrap font-semibold text-xs"
+                    style={{ boxShadow: "2px 2px 0px 0px rgba(0, 0, 0, 1)" }}
                   >
                     {tool.label}
                   </div>
@@ -61,25 +61,33 @@ export function BottomDock({ activeTool, onToolClick }: BottomDockProps) {
                   onMouseEnter={() => setHoveredTool(tool.id)}
                   onMouseLeave={() => setHoveredTool(null)}
                   className={`
-                    rounded-xl w-14 h-14 flex items-center justify-center
-                    border-[3px] border-foreground transition-all duration-100
+                    rounded-lg w-9 h-9 md:w-10 md:h-10 flex items-center justify-center
+                    border-[2px] border-foreground transition-all duration-100
                     ${isActive ? "bg-accent text-accent-foreground" : "bg-card"}
                   `}
                   style={{
-                    boxShadow: "4px 4px 0px 0px rgba(0, 0, 0, 1)",
-                    backgroundColor: isHovered && !isActive ? "#FF8C42" : undefined,
+                    boxShadow: "2px 2px 0px 0px rgba(0, 0, 0, 1)",
+                    backgroundColor: isHovered && !isActive ? "#9333ea" : undefined,
                   }}
                   onMouseDown={(e) => {
-                    e.currentTarget.style.transform = "translate(2px, 2px)"
-                    e.currentTarget.style.boxShadow = "2px 2px 0px 0px rgba(0, 0, 0, 1)"
+                    e.currentTarget.style.transform = "translate(1px, 1px)"
+                    e.currentTarget.style.boxShadow = "1px 1px 0px 0px rgba(0, 0, 0, 1)"
                   }}
                   onMouseUp={(e) => {
                     e.currentTarget.style.transform = ""
-                    e.currentTarget.style.boxShadow = "4px 4px 0px 0px rgba(0, 0, 0, 1)"
+                    e.currentTarget.style.boxShadow = "2px 2px 0px 0px rgba(0, 0, 0, 1)"
+                  }}
+                  onTouchStart={(e) => {
+                    e.currentTarget.style.transform = "translate(1px, 1px)"
+                    e.currentTarget.style.boxShadow = "1px 1px 0px 0px rgba(0, 0, 0, 1)"
+                  }}
+                  onTouchEnd={(e) => {
+                    e.currentTarget.style.transform = ""
+                    e.currentTarget.style.boxShadow = "2px 2px 0px 0px rgba(0, 0, 0, 1)"
                   }}
                 >
                   <Icon
-                    className="w-6 h-6"
+                    className="w-4 h-4 md:w-5 md:h-5"
                     strokeWidth={2.5}
                     style={{ color: isHovered && !isActive ? "white" : undefined }}
                   />

@@ -1,0 +1,609 @@
+openapi: 3.0.0
+info:
+  title: Flow Editor - Replicate AI Integration API
+  description: |
+    Comprehensive API documentation for Replicate image editing and AI processing integration.
+    This API provides endpoints to create, monitor, and manage AI-powered image predictions.
+  version: 1.0.0
+  contact:
+    name: Flow Editor Support
+    email: support@example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+  - url: https://app.example.com
+    description: Production server
+
+tags:
+  - name: Predictions
+    description: Create and manage image predictions
+  - name: Webhooks
+    description: Handle async prediction updates
+
+paths:
+  /api/replicate/predictions:
+    post:
+      operationId: createPrediction
+      tags:
+        - Predictions
+      summary: Create a new prediction
+      description: |
+        Creates a new AI prediction for image editing or processing.
+        The prediction will be processed asynchronously.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePredictionRequest'
+            examples:
+              removeBackground:
+                summary: Remove image background
+                value:
+                  version: qwen/qwen-image-edit-plus
+                  input:
+                    image:
+                      - https://example.com/photo.jpg
+                    prompt: Remove the background and make it transparent
+                    guidance_scale: 7.5
+                    num_inference_steps: 50
+              poseTransfer:
+                summary: Transfer pose between images
+                value:
+                  version: qwen/qwen-image-edit-plus
+                  input:
+                    image:
+                      - https://example.com/pose.jpg
+                      - https://example.com/person.jpg
+                    prompt: Transfer the yoga pose from image 1 to image 2
+                    guidance_scale: 8.0
+                    num_inference_steps: 75
+              withWebhook:
+                summary: Create with webhook notification
+                value:
+                  version: qwen/qwen-image-edit-plus
+                  input:
+                    image:
+                      - https://example.com/photo.jpg
+                    prompt: Increase brightness and saturation
+                  webhook: https://example.com/webhooks/replicate
+                  webhook_events_filter:
+                    - start
+                    - completed
+      responses:
+        '201':
+          description: Prediction created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prediction'
+              example:
+                id: 550e8400-e29b-41d4-a716-446655440000
+                status: starting
+                version: qwen/qwen-image-edit-plus
+                created_at: '2024-10-20T10:30:00Z'
+                input:
+                  image:
+                    - https://example.com/photo.jpg
+                  prompt: Remove the background
+                output: null
+                error: null
+                urls:
+                  get: https://api.replicate.com/v1/predictions/550e8400-e29b-41d4-a716-446655440000
+                  cancel: https://api.replicate.com/v1/predictions/550e8400-e29b-41d4-a716-446655440000/cancel
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: 'Validation error: Image URL must be HTTPS'
+                code: VALIDATION_ERROR
+                details:
+                  field: input.image
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Replicate API token not configured
+                code: AUTHENTICATION_ERROR
+        '413':
+          description: Payload too large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Image file is too large for processing
+                code: FILE_TOO_LARGE
+                details:
+                  max_size: 10MB
+                  received_size: 15MB
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Rate limit exceeded. Please try again later.
+                code: RATE_LIMIT_ERROR
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      operationId: listPredictions
+      tags:
+        - Predictions
+      summary: List predictions
+      description: Get a paginated list of predictions for the authenticated user
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of results (default 10, max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: offset
+          in: query
+          description: Offset for pagination
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: List of predictions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PredictionList'
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/replicate/predictions/{id}:
+    get:
+      operationId: getPrediction
+      tags:
+        - Predictions
+      summary: Get prediction status
+      description: Retrieve the current status and results of a prediction
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Prediction ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Prediction details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prediction'
+              example:
+                id: 550e8400-e29b-41d4-a716-446655440000
+                status: succeeded
+                output:
+                  images:
+                    - https://replicate.delivery/pbxt/abc123/result.jpg
+                error: null
+                created_at: '2024-10-20T10:30:00Z'
+                completed_at: '2024-10-20T10:45:30Z'
+        '400':
+          description: Invalid prediction ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Prediction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Prediction not found
+                code: NOT_FOUND
+
+    delete:
+      operationId: cancelPrediction
+      tags:
+        - Predictions
+      summary: Cancel prediction
+      description: Cancel an in-progress prediction
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Prediction ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Prediction canceled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prediction'
+              example:
+                id: 550e8400-e29b-41d4-a716-446655440000
+                status: canceled
+        '404':
+          description: Prediction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/webhooks/replicate:
+    post:
+      operationId: handleWebhook
+      tags:
+        - Webhooks
+      summary: Handle webhook notification
+      description: Receives async updates for predictions with webhook configured
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookPayload'
+      responses:
+        '200':
+          description: Webhook received successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  received:
+                    type: boolean
+                    example: true
+        '401':
+          description: Invalid webhook signature
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    # Request/Response Objects
+    CreatePredictionRequest:
+      type: object
+      required:
+        - version
+        - input
+      properties:
+        version:
+          type: string
+          description: Model version identifier
+          example: qwen/qwen-image-edit-plus
+        input:
+          $ref: '#/components/schemas/PredictionInput'
+        webhook:
+          type: string
+          format: uri
+          description: Optional webhook URL for async updates
+          example: https://example.com/webhooks/replicate
+        webhook_events_filter:
+          type: array
+          items:
+            type: string
+            enum:
+              - start
+              - output
+              - logs
+              - completed
+          description: Events to send to webhook
+          example:
+            - start
+            - completed
+
+    PredictionInput:
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/QwenImageEditInput'
+      discriminator:
+        propertyName: model
+
+    QwenImageEditInput:
+      type: object
+      required:
+        - image
+        - prompt
+      properties:
+        image:
+          type: array
+          items:
+            type: string
+            format: uri
+          minItems: 1
+          maxItems: 4
+          description: Array of image URLs to process
+          example:
+            - https://example.com/photo.jpg
+        prompt:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          description: Editing prompt describing desired changes
+          example: Remove the background
+        negative_prompt:
+          type: string
+          maxLength: 1000
+          description: What to avoid in output
+          example: blurry, low quality
+        num_outputs:
+          type: integer
+          minimum: 1
+          maximum: 4
+          default: 1
+          description: Number of output variations
+        guidance_scale:
+          type: number
+          minimum: 0.1
+          maximum: 20
+          default: 7.5
+          description: How closely to follow the prompt
+        num_inference_steps:
+          type: integer
+          minimum: 1
+          maximum: 500
+          default: 50
+          description: Number of inference steps
+        seed:
+          type: integer
+          description: Random seed for reproducibility
+
+    Prediction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique prediction identifier
+        version:
+          type: string
+          description: Model version used
+        status:
+          type: string
+          enum:
+            - starting
+            - processing
+            - succeeded
+            - failed
+            - canceled
+          description: Current prediction status
+        input:
+          type: object
+          description: Input parameters sent to model
+        output:
+          type: object
+          nullable: true
+          description: Model output (null until completion)
+          properties:
+            images:
+              type: array
+              items:
+                type: string
+                format: uri
+              description: URLs to generated images
+        error:
+          type: string
+          nullable: true
+          description: Error message if failed
+        logs:
+          type: string
+          nullable: true
+          description: Processing logs
+        metrics:
+          type: object
+          properties:
+            predict_time:
+              type: number
+              description: Processing time in seconds
+        created_at:
+          type: string
+          format: date-time
+          description: When prediction was created
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When processing started
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When processing finished
+        urls:
+          type: object
+          properties:
+            get:
+              type: string
+              format: uri
+              description: URL to get prediction status
+            cancel:
+              type: string
+              format: uri
+              description: URL to cancel prediction
+
+    PredictionList:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Prediction'
+        next:
+          type: string
+          format: uri
+          nullable: true
+          description: URL to next page
+        previous:
+          type: string
+          format: uri
+          nullable: true
+          description: URL to previous page
+
+    WebhookPayload:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Prediction ID
+        status:
+          type: string
+          enum:
+            - starting
+            - processing
+            - succeeded
+            - failed
+            - canceled
+        output:
+          type: object
+          nullable: true
+        error:
+          type: string
+          nullable: true
+        logs:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+        code:
+          type: string
+          description: Error code for programmatic handling
+          enum:
+            - INVALID_REQUEST
+            - AUTHENTICATION_ERROR
+            - RATE_LIMIT_ERROR
+            - FILE_TOO_LARGE
+            - PROCESSING_ERROR
+            - TIMEOUT
+            - NETWORK_ERROR
+            - UNKNOWN_ERROR
+            - CONFIGURATION_ERROR
+            - VALIDATION_ERROR
+            - FORBIDDEN
+            - NOT_FOUND
+            - CONFLICT
+            - SERVER_ERROR
+            - BAD_GATEWAY
+            - SERVICE_UNAVAILABLE
+            - GATEWAY_TIMEOUT
+        details:
+          type: object
+          nullable: true
+          description: Additional error context
+        requestId:
+          type: string
+          description: Request tracking ID
+        timestamp:
+          type: string
+          format: date-time
+          description: When error occurred
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token authentication
+
+security:
+  - bearerAuth: []
+
+x-examples:
+  CreateAndPollPrediction:
+    description: Create a prediction and poll for results
+    steps:
+      - description: Create prediction
+        request:
+          method: POST
+          path: /api/replicate/predictions
+          body:
+            version: qwen/qwen-image-edit-plus
+            input:
+              image:
+                - https://example.com/photo.jpg
+              prompt: Remove background
+      - description: Poll for status (repeat until completed)
+        request:
+          method: GET
+          path: /api/replicate/predictions/{id}
+
+  CancelPrediction:
+    description: Cancel an in-progress prediction
+    steps:
+      - description: Cancel prediction
+        request:
+          method: DELETE
+          path: /api/replicate/predictions/{id}
+
+  WebhookFlow:
+    description: Use webhooks for async processing
+    steps:
+      - description: Create prediction with webhook
+        request:
+          method: POST
+          path: /api/replicate/predictions
+          body:
+            version: qwen/qwen-image-edit-plus
+            input:
+              image:
+                - https://example.com/photo.jpg
+              prompt: Remove background
+            webhook: https://example.com/webhooks/replicate
+            webhook_events_filter:
+              - completed
+      - description: Receive webhook notification when done
+        request:
+          method: POST
+          path: /api/webhooks/replicate
+          body:
+            id: 550e8400-e29b-41d4-a716-446655440000
+            status: succeeded
+            output:
+              images:
+                - https://replicate.delivery/pbxt/abc123/result.jpg
