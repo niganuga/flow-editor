@@ -24,7 +24,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
-const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN || process.env.REPLICATE_API_KEY;
+const REPLICATE_API_TOKEN = process.env["REPLICATE_API_TOKEN"] || process.env["REPLICATE_API_KEY"];
 const REPLICATE_API_BASE = 'https://api.replicate.com/v1';
 
 // ============================================================================

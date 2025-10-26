@@ -68,11 +68,11 @@ export async function POST(request: NextRequest) {
         predictionId = `pred_${Date.now()}_${Math.random().toString(36).substring(7)}`
 
         console.log('[API] Processing image edit request')
-        console.log('[API] REPLICATE_API_KEY exists:', !!process.env.REPLICATE_API_KEY)
-        console.log('[API] REPLICATE_API_KEY prefix:', process.env.REPLICATE_API_KEY?.substring(0, 3))
+        console.log('[API] REPLICATE_API_KEY exists:', !!process.env["REPLICATE_API_KEY"])
+        console.log('[API] REPLICATE_API_KEY prefix:', process.env["REPLICATE_API_KEY"]?.substring(0, 3))
 
         // Check if we have a real API key
-        const hasApiKey = process.env.REPLICATE_API_KEY && process.env.REPLICATE_API_KEY.startsWith('r8_')
+        const hasApiKey = process.env["REPLICATE_API_KEY"] && process.env["REPLICATE_API_KEY"].startsWith('r8_')
         console.log('[API] Using real Replicate API:', hasApiKey)
 
         if (hasApiKey) {
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
           ;(async () => {
             try {
               const replicate = new Replicate({
-                auth: process.env.REPLICATE_API_KEY!
+                auth: process.env["REPLICATE_API_KEY"]!
               })
 
               console.log('[API] Calling Replicate model qwen/qwen-image-edit-plus')
@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
         console.log('[API] Processing mockup generation request')
 
         // Check if we have a real API key
-        const hasApiKey = process.env.REPLICATE_API_KEY && process.env.REPLICATE_API_KEY.startsWith('r8_')
+        const hasApiKey = process.env["REPLICATE_API_KEY"] && process.env["REPLICATE_API_KEY"].startsWith('r8_')
         console.log('[API] Using real Replicate API for mockup:', hasApiKey)
 
         predictionId = `pred_${Date.now()}_${Math.random().toString(36).substring(7)}`
@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
           ;(async () => {
             try {
               const replicate = new Replicate({
-                auth: process.env.REPLICATE_API_KEY!
+                auth: process.env["REPLICATE_API_KEY"]!
               })
 
               // Build the prompt for mockup generation using single image

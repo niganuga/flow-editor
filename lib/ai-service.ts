@@ -27,16 +27,16 @@ class AIService {
 
   constructor() {
     // Initialize Anthropic if API key exists
-    if (process.env.ANTHROPIC_API_KEY) {
+    if (process.env["ANTHROPIC_API_KEY"]) {
       this.anthropic = new Anthropic({
-        apiKey: process.env.ANTHROPIC_API_KEY,
+        apiKey: process.env["ANTHROPIC_API_KEY"],
       })
     }
 
     // Initialize Google AI if API key exists
-    if (process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+    if (process.env["GEMINI_API_KEY"] || process.env["GOOGLE_GENERATIVE_AI_API_KEY"]) {
       this.googleAI = new GoogleGenAI({
-        apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY!,
+        apiKey: process.env["GEMINI_API_KEY"] || process.env["GOOGLE_GENERATIVE_AI_API_KEY"]!,
       })
     }
   }

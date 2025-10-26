@@ -102,7 +102,7 @@ export class ReplicateClient {
   private pollInterval = 2000 // 2 seconds between polls
 
   constructor(apiKey?: string) {
-    const key = apiKey || process.env.REPLICATE_API_KEY
+    const key = apiKey || process.env["REPLICATE_API_KEY"]
     if (!key) {
       throw new Error('REPLICATE_API_KEY is required')
     }
@@ -426,7 +426,7 @@ export function resetReplicateClient(): void {
  * Check if Replicate is configured
  */
 export function isReplicateConfigured(): boolean {
-  return !!process.env.REPLICATE_API_KEY
+  return !!process.env["REPLICATE_API_KEY"]
 }
 
 /**

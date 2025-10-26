@@ -12,13 +12,15 @@ import {
   FileText,
 } from "lucide-react"
 import type {
-  ClarificationMessage,
-  ClarificationAction,
-  ClarificationStep,
+  ClarificationData,
+  ClarificationOption,
+  WorkflowStep,
 } from "@/lib/types/ai-clarification"
 
+type ClarificationAction = 'suggested' | 'original' | 'custom';
+
 interface ClarificationMessageProps {
-  clarification: ClarificationMessage
+  clarification: ClarificationData
   onResponse: (action: ClarificationAction) => void
   onCancel: () => void
   isProcessing?: boolean

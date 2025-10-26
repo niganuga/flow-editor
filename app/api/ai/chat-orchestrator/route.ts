@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
     )
 
     // Also allow production domains from environment
-    const productionDomain = process.env.NEXT_PUBLIC_APP_URL
+    const productionDomain = process.env["NEXT_PUBLIC_APP_URL"]
     const isProductionOrigin = productionDomain && imageUrl.startsWith(productionDomain)
 
     if (!isAllowedOrigin && !isProductionOrigin) {

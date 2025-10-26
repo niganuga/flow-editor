@@ -558,7 +558,7 @@ let anthropicClient: Anthropic | null = null;
 
 function getAnthropicClient(): Anthropic {
   if (!anthropicClient) {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env["ANTHROPIC_API_KEY"];
     if (!apiKey) {
       throw new Error('ANTHROPIC_API_KEY environment variable not set');
     }
@@ -1573,7 +1573,7 @@ export async function getConversation(conversationId: string) {
  * @returns True if ready, false otherwise
  */
 export function isOrchestratorReady(): boolean {
-  return !!process.env.ANTHROPIC_API_KEY;
+  return !!process.env["ANTHROPIC_API_KEY"];
 }
 
 /**

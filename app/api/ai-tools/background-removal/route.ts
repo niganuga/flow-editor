@@ -15,12 +15,12 @@ interface BackgroundRemovalRequest {
 
 // Bria Product Cutout configuration
 const BRIA_CONFIG = {
-  model: 'bria/product-cutout',
+  model: 'bria/product-cutout' as `${string}/${string}`,
   name: 'Bria Product Cutout',
   cost: 0.018,
 };
 
-const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN || process.env.REPLICATE_API_KEY;
+const REPLICATE_API_TOKEN = process.env["REPLICATE_API_TOKEN"] || process.env["REPLICATE_API_KEY"];
 
 export async function POST(request: NextRequest) {
   try {

@@ -637,7 +637,7 @@ export function AIChatPanel({ onClose, zIndex, isActive, onFocus }: AIChatPanelP
 
       if (result.toolCalls && result.toolCalls.length > 0) {
         console.log(`[AI Chat] Executing ${result.toolCalls.length} tool(s) client-side...`)
-        console.log('[AI Chat] Tools to execute:', result.toolCalls.map(t => t.toolName).join(', '))
+        console.log('[AI Chat] Tools to execute:', result.toolCalls.map((t: any) => t.toolName).join(', '))
 
         // Use the original blob URL for client-side execution
         let currentImageUrl = imageUrl

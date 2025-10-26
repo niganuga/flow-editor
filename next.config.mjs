@@ -1,13 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // ✅ ENABLE type checking and linting in builds (October 2025 best practice)
-  eslint: {
-    ignoreDuringBuilds: false, // Enforce linting
-    dirs: ['app', 'components', 'lib'], // Lint these directories
-  },
+  // ✅ TypeScript type checking in builds (October 2025 best practice)
   typescript: {
     ignoreBuildErrors: false, // Enforce type safety
   },
+
+  // ✅ Next.js 16: Exclude native modules from server bundling (Turbopack compatibility)
+  serverExternalPackages: ['sharp', '@napi-rs/canvas', 'canvas'],
 
   // ✅ Image optimization (October 2025 best practice)
   images: {

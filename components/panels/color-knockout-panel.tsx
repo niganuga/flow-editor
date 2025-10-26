@@ -88,6 +88,7 @@ export function ColorKnockoutPanel({ onClose, zIndex, isActive, onFocus }: Color
           const a = data[i + 3]
 
           // Skip transparent and extreme colors
+          if (r === undefined || g === undefined || b === undefined || a === undefined) continue
           if (a < 200) continue
           if (r > 250 && g > 250 && b > 250) continue
           if (r < 5 && g < 5 && b < 5) continue

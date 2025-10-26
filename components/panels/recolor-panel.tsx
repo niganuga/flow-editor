@@ -400,6 +400,7 @@ export function RecolorPanel({ onClose, zIndex, isActive, onFocus }: RecolorPane
         setMagnifierCoords(null)
       }
     }
+    return undefined
   }, [isPicking, handleScreenClick, handleMouseMoveForMagnifier])
 
   const handleStartPicking = (mode: 'source' | 'target') => {
@@ -701,9 +702,6 @@ export function RecolorPanel({ onClose, zIndex, isActive, onFocus }: RecolorPane
             {/* Current Color Selection with Region Info */}
             {currentSourceColor && selectedRegion && (
               <div className="p-2 rounded-lg border-[2px] border-foreground bg-card space-y-2">
-                {/* Debug info */}
-                {console.log("RECOLOR DEBUG:", { currentSourceColor, selectedRegion, replacementColor })}
-
                 {/* Color swatches side by side */}
                 <div className="flex items-stretch gap-2">
                   {/* Source color */}

@@ -26,7 +26,7 @@ const BRIA_V2_CONFIG = {
   description: 'Premium quality with 256-level alpha transparency',
 };
 
-const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN || process.env.REPLICATE_API_KEY;
+const REPLICATE_API_TOKEN = process.env["REPLICATE_API_TOKEN"] || process.env["REPLICATE_API_KEY"];
 
 export async function POST(request: NextRequest) {
   try {
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     // Add optional settings for RMBG 2.0
     if (body.settings?.preserve_alpha !== undefined) {
-      input.preserve_partial_alpha = body.settings.preserve_alpha; // RMBG 2.0 uses 'preserve_partial_alpha'
+      input['preserve_partial_alpha'] = body.settings.preserve_alpha; // RMBG 2.0 uses 'preserve_partial_alpha'
     }
 
     // Create prediction directly with Replicate API
