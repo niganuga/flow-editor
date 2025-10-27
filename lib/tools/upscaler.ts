@@ -61,8 +61,34 @@ const MODEL_CONFIGS = {
   },
 } as const;
 
+// GPU pixel limit for Real-ESRGAN model
+const GPU_PIXEL_LIMIT = 2_096_704; // Maximum pixels that fit in GPU memory
+
+/**
+ * Check if image dimensions exceed GPU pixel limit
+ */
+async function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: img.width, height: img.height });
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Failed to load image dimensions'));
+    };
+
+    img.src = url;
+  });
+}
+
 /**
  * Prepare image for API submission
+ * Handles transparent PNGs, file size compression, and GPU pixel limits
  */
 async function prepareImage(
   image: File,
@@ -70,26 +96,50 @@ async function prepareImage(
 ): Promise<string> {
   onProgress?.(10, 'Preparing image...');
 
-  // Check for transparent PNG and add white background
   let processedImage = image;
-  if (image.type === 'image/png') {
-    const isTransparent = await isPNGTransparent(image);
+
+  // Get image dimensions to check pixel count
+  const dimensions = await getImageDimensions(processedImage);
+  const totalPixels = dimensions.width * dimensions.height;
+
+  console.log(`[Upscaler] Image dimensions: ${dimensions.width}×${dimensions.height} (${totalPixels.toLocaleString()} pixels)`);
+
+  // Check if image exceeds GPU pixel limit
+  if (totalPixels > GPU_PIXEL_LIMIT) {
+    const scaleFactor = Math.sqrt(GPU_PIXEL_LIMIT / totalPixels);
+    const newWidth = Math.floor(dimensions.width * scaleFactor);
+    const newHeight = Math.floor(dimensions.height * scaleFactor);
+
+    onProgress?.(12, `Image too large (${totalPixels.toLocaleString()} pixels). Resizing to ${newWidth}×${newHeight}...`);
+    console.log(`[Upscaler] Resizing from ${dimensions.width}×${dimensions.height} to ${newWidth}×${newHeight} to fit GPU limit`);
+
+    processedImage = await compressImage(
+      processedImage,
+      0.95, // High quality since we're just resizing
+      Math.max(newWidth, newHeight)
+    );
+  }
+
+  // Check for transparent PNG and add white background
+  if (processedImage.type === 'image/png') {
+    const isTransparent = await isPNGTransparent(processedImage);
     if (isTransparent) {
       onProgress?.(15, 'Adding white background to transparent image...');
-      processedImage = await addWhiteBackgroundToImage(image);
+      processedImage = await addWhiteBackgroundToImage(processedImage);
+      console.log('[Upscaler] Added white background to transparent PNG');
     }
   }
 
-  // Compress if needed
+  // Compress if file size is too large
   if (shouldCompressFile(processedImage)) {
-    onProgress?.(20, 'Optimizing image for processing...');
+    onProgress?.(20, 'Optimizing file size for processing...');
     processedImage = await compressImage(
       processedImage,
       FILE_LIMITS.COMPRESSION.quality,
       FILE_LIMITS.COMPRESSION.maxDimension
     );
     console.log(
-      `Compressed from ${(image.size / (1024 * 1024)).toFixed(2)}MB to ${(processedImage.size / (1024 * 1024)).toFixed(2)}MB`
+      `[Upscaler] Compressed from ${(image.size / (1024 * 1024)).toFixed(2)}MB to ${(processedImage.size / (1024 * 1024)).toFixed(2)}MB`
     );
   }
 

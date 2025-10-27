@@ -8,7 +8,7 @@ import Replicate from 'replicate'
 console.log('🧪 Testing Replicate API Integration\n')
 
 // Use API key from .env.local
-const apiKey = 'r8_xxxxx...[REDACTED]'
+const apiKey = process.env.REPLICATE_API_TOKEN || process.env.REPLICATE_API_KEY
 console.log('API Key present:', !!apiKey)
 console.log('API Key starts with r8_:', apiKey?.startsWith('r8_'))
 console.log('API Key prefix:', apiKey?.substring(0, 10) + '...\n')

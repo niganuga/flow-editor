@@ -503,7 +503,7 @@ export function getModelInfoV2(model: UpscaleModelV2) {
  */
 export function getAvailableModelsV2() {
   return Object.entries(MODEL_CONFIGS_V2).map(([key, config]) => ({
-    id: key as UpscaleModelV2,
+    type: key as UpscaleModelV2,
     ...config,
   }));
 }

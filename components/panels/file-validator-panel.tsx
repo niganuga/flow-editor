@@ -287,7 +287,7 @@ export function FileValidatorPanel({ onClose, zIndex, isActive, onFocus }: { onC
           resolve({
             name: "Transparency Check",
             valid: false,
-            error: "No transparency detected - needs transparent background"
+            error: "No transparency - needs transparent BG"
           })
         } else {
           resolve({
@@ -591,7 +591,7 @@ export function FileValidatorPanel({ onClose, zIndex, isActive, onFocus }: { onC
                           min="0.1"
                           value={printWidthInches}
                           onChange={handlePrintWidthChange}
-                          className="w-full rounded-md border border-foreground/15 bg-background px-2 py-1.5 text-xs font-medium text-foreground focus:border-foreground focus:outline-none focus:ring-2 focus:ring-foreground/30"
+                          className="w-full rounded-md border border-foreground/15 bg-background px-2 py-1.5 text-center text-base font-medium text-foreground focus:border-foreground focus:outline-none focus:ring-2 focus:ring-foreground/30"
                           placeholder="e.g. 8.5"
                         />
                       </label>
@@ -603,7 +603,7 @@ export function FileValidatorPanel({ onClose, zIndex, isActive, onFocus }: { onC
                           min="0.1"
                           value={printHeightInches}
                           onChange={handlePrintHeightChange}
-                          className="w-full rounded-md border border-foreground/15 bg-background px-2 py-1.5 text-xs font-medium text-foreground focus:border-foreground focus:outline-none focus:ring-2 focus:ring-foreground/30"
+                          className="w-full rounded-md border border-foreground/15 bg-background px-2 py-1.5 text-center text-base font-medium text-foreground focus:border-foreground focus:outline-none focus:ring-2 focus:ring-foreground/30"
                           placeholder="e.g. 11"
                         />
                       </label>

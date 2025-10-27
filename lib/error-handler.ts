@@ -21,7 +21,7 @@
  */
 
 import { validateToolParameters, type ValidationResult } from './parameter-validator';
-import { validateToolResult, type ResultValidation } from './result-validator';
+import { validateToolResult, getExpectedOperation, type ResultValidation } from './result-validator';
 import { executeToolFunction } from './ai-tools-orchestrator';
 import { storeToolExecution, type ToolExecution } from './context-manager';
 import type { ImageAnalysis } from './image-analyzer';
@@ -293,14 +293,14 @@ export async function executeWithRetry(
       // ===== STEP 3: Validate Result Quality =====
       console.log(`[ErrorHandler] Validating result quality...`);
 
-      const resultValidation = await validateToolResult(
-        imageUrl,
-        resultUrl,
+      const resultValidation = await validateToolResult({
         toolName,
-        currentParams
-      );
+        beforeImageUrl: imageUrl,
+        afterImageUrl: resultUrl,
+        expectedOperation: getExpectedOperation(toolName),
+      });
 
-      if (!resultValidation.isValid || resultValidation.qualityScore < 70) {
+      if (!resultValidation.success || resultValidation.qualityScore < 70) {
         // Quality too low
         console.log(
           `[ErrorHandler] Quality validation failed (score: ${resultValidation.qualityScore})`
@@ -360,8 +360,8 @@ export async function executeWithRetry(
         success: true,
         confidence: Math.min(validation.confidence, resultValidation.qualityScore),
         resultMetrics: {
-          pixelsChanged: resultValidation.changeMetrics.pixelsChanged,
-          percentageChanged: resultValidation.changeMetrics.percentageChanged,
+          pixelsChanged: resultValidation.pixelsChanged,
+          percentageChanged: resultValidation.percentageChanged,
           executionTimeMs: Date.now() - attemptStartTime,
           qualityScore: resultValidation.qualityScore,
         },
@@ -543,7 +543,7 @@ export function analyzeFailure(
   }
 
   // ===== QUALITY FAILURE =====
-  if (resultValidation && (!resultValidation.isValid || resultValidation.qualityScore < 70)) {
+  if (resultValidation && (!resultValidation.success || resultValidation.qualityScore < 70)) {
     const reasoning = resultValidation.reasoning;
 
     // Too much changed (>95%)
@@ -595,11 +595,11 @@ export function analyzeFailure(
       failureMode: 'quality',
       rootCause: resultValidation.reasoning,
       recoverable: true,
-      suggestedFixes: resultValidation.issues.map((issue) => ({
+      suggestedFixes: resultValidation.warnings.map((warning) => ({
         parameter: 'unknown',
         currentValue: null,
         suggestedValue: 'Adjust parameters',
-        reason: issue.message,
+        reason: warning,
       })),
     };
   }

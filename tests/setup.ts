@@ -81,7 +81,7 @@ class MockImage {
   constructor() {
     setTimeout(() => {
       if (this.onload) {
-        this.onload.call(this, new Event('load'))
+        this.onload.call(this as unknown as GlobalEventHandlers, new Event('load'))
       }
     }, 0)
   }
@@ -105,11 +105,14 @@ class MockFileReader {
     setTimeout(() => {
       this.result = 'data:image/png;base64,mock-data'
       this.readyState = 2
+      const target = this as unknown as FileReader
       if (this.onloadend) {
-        this.onloadend.call(this, new ProgressEvent('loadend'))
+        const event = Object.assign(new ProgressEvent('loadend'), { target })
+        this.onloadend.call(target, event as ProgressEvent<FileReader>)
       }
       if (this.onload) {
-        this.onload.call(this, new ProgressEvent('load'))
+        const event = Object.assign(new ProgressEvent('load'), { target })
+        this.onload.call(target, event as ProgressEvent<FileReader>)
       }
     }, 0)
   }
@@ -118,8 +121,10 @@ class MockFileReader {
     setTimeout(() => {
       this.result = new ArrayBuffer(8)
       this.readyState = 2
+      const target = this as unknown as FileReader
       if (this.onloadend) {
-        this.onloadend.call(this, new ProgressEvent('loadend'))
+        const event = Object.assign(new ProgressEvent('loadend'), { target })
+        this.onloadend.call(target, event as ProgressEvent<FileReader>)
       }
     }, 0)
   }

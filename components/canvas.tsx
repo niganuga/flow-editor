@@ -144,12 +144,14 @@ export function Canvas({ onClose, zIndex = 30, isActive = true, onFocus }: Canva
       zIndex={zIndex}
       isActive={isActive}
       onFocus={onFocus}
+      className="border-[4px]"
+      shadowStyle="10px 10px 0px 0px rgba(0, 0, 0, 1)"
     >
       {imageUrl ? (
         <div className="relative h-full">
           <div
             ref={containerRef}
-            className="h-full flex items-center justify-center p-6 overflow-hidden"
+            className="h-full flex items-center justify-center p-6 pb-24 overflow-hidden"
             style={{
               ...getBackgroundStyle(),
               cursor: zoom > 100 ? (isPanning ? 'grabbing' : 'grab') : 'default',
@@ -176,7 +178,7 @@ export function Canvas({ onClose, zIndex = 30, isActive = true, onFocus }: Canva
           </div>
 
           {/* Bottom Controls - Centered */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2">
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2">
             {/* Zoom Controls */}
             <div className="flex items-center gap-1 bg-card border-2 border-foreground rounded-lg p-1 h-9">
               <Button

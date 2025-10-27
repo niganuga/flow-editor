@@ -213,7 +213,7 @@ User clicks Apply (edits only) → Update canvas
 **Required Environment Variables:**
 ```bash
 # .env.local
-REPLICATE_API_KEY=r8_xxxxx...[REDACTED]
+REPLICATE_API_KEY=r8_xxxxx... # Get from https://replicate.com/account/api-tokens
 ```
 
 **Replicate Models Used:**

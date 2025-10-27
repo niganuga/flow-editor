@@ -39,6 +39,8 @@ import { extractColors, recolorImage, type BlendMode as RecolorBlendMode } from 
 import { textureCut, createPatternTexture } from './tools/texture-cut';
 import { removeBackground } from './tools/background-remover';
 import { upscaleImage } from './tools/upscaler';
+import { dataUrlToBlob, blobToFile } from './file-utils';
+import { getConfidenceLevel } from './types/ai-clarification';
 
 // ===== INTERFACES =====
 
@@ -140,6 +142,15 @@ export interface ClarificationData {
 
   /** User-facing options */
   options: ClarificationOption[];
+
+  /** Overall confidence in understanding the workflow (0-1) */
+  overallConfidence?: number;
+
+  /** User-friendly confidence level */
+  overallConfidenceLevel?: 'high' | 'medium' | 'low';
+
+  /** Confidence in suggested workflow (if provided) */
+  suggestionConfidence?: number;
 }
 
 export interface ClarificationStep {
@@ -671,14 +682,69 @@ async function callClaudeVisionAPI(params: {
     }
   };
 
+  /**
+   * Compress base64 image to stay under 5MB limit for Claude Vision API
+   */
+  const compressImageIfNeeded = async (imageSource: any): Promise<any> => {
+    if (imageSource.type !== 'base64') {
+      return imageSource; // Only compress base64 images
+    }
+
+    // Calculate current size (base64 decoded size)
+    const currentSizeBytes = (imageSource.data.length * 3) / 4;
+    const MAX_SIZE_BYTES = 4.8 * 1024 * 1024; // 4.8 MB to stay safely under 5 MB limit
+
+    if (currentSizeBytes <= MAX_SIZE_BYTES) {
+      return imageSource; // Image is already small enough
+    }
+
+    console.log(`[Orchestrator] Image too large (${(currentSizeBytes / 1024 / 1024).toFixed(2)} MB), compressing...`);
+
+    try {
+      // Decode base64 to buffer
+      const buffer = Buffer.from(imageSource.data, 'base64');
+
+      // Use sharp to compress the image
+      const sharp = (await import('sharp')).default;
+
+      // Calculate scale factor to reduce file size
+      const scaleFactor = Math.sqrt(MAX_SIZE_BYTES / currentSizeBytes);
+
+      const compressed = await sharp(buffer)
+        .resize({
+          width: Math.floor(2048 * scaleFactor), // Max reasonable width for Claude
+          fit: 'inside',
+          withoutEnlargement: true
+        })
+        .jpeg({ quality: 85 }) // Convert to JPEG with good quality
+        .toBuffer();
+
+      const compressedBase64 = compressed.toString('base64');
+      const compressedSizeBytes = (compressedBase64.length * 3) / 4;
+
+      console.log(`[Orchestrator] Compressed from ${(currentSizeBytes / 1024 / 1024).toFixed(2)} MB to ${(compressedSizeBytes / 1024 / 1024).toFixed(2)} MB`);
+
+      return {
+        type: 'base64',
+        media_type: 'image/jpeg',
+        data: compressedBase64,
+      };
+    } catch (error) {
+      console.error('[Orchestrator] Image compression failed:', error);
+      // Return original if compression fails
+      return imageSource;
+    }
+  };
+
   // Build message content with images
   const messageContent: any[] = [];
 
-  // Always add canvas image first
+  // Always add canvas image first (compress if needed)
   const canvasSource = await convertImageUrl(params.imageUrl);
+  const compressedCanvasSource = await compressImageIfNeeded(canvasSource);
   messageContent.push({
     type: 'image',
-    source: canvasSource,
+    source: compressedCanvasSource,
   });
 
   // Determine image labels based on what's present
@@ -694,11 +760,12 @@ async function callClaudeVisionAPI(params: {
   }
 
   // Add preview result if exists
-  if (hasPreview) {
+  if (hasPreview && params.previewResultUrl) {
     const previewSource = await convertImageUrl(params.previewResultUrl);
+    const compressedPreviewSource = await compressImageIfNeeded(previewSource);
     messageContent.push({
       type: 'image',
-      source: previewSource,
+      source: compressedPreviewSource,
     });
     messageContent.push({
       type: 'text',
@@ -707,11 +774,12 @@ async function callClaudeVisionAPI(params: {
   }
 
   // Add attached reference image if exists
-  if (hasAttachment) {
+  if (hasAttachment && params.attachedImageUrl) {
     const attachmentSource = await convertImageUrl(params.attachedImageUrl);
+    const compressedAttachmentSource = await compressImageIfNeeded(attachmentSource);
     messageContent.push({
       type: 'image',
-      source: attachmentSource,
+      source: compressedAttachmentSource,
     });
     messageContent.push({
       type: 'text',
@@ -1137,9 +1205,11 @@ DPI REQUIREMENTS:
 • Screen Only: 72-96 DPI (not suitable for printing)
 
 WORKFLOW OPTIMIZATION FOR PRINT:
-1. ALWAYS upscale BEFORE background removal (preserves edge quality)
-2. ALWAYS upscale BEFORE color operations (maintains color accuracy)
-3. NEVER upscale after mockup generation (mockup is final preview only)
+1. CROP/TRIM excess background BEFORE upscaling (when solid background + print size request)
+   → Maximizes design content, avoids wasting pixels on empty space
+2. ALWAYS upscale BEFORE background removal (preserves edge quality)
+3. ALWAYS upscale BEFORE color operations (maintains color accuracy)
+4. NEVER upscale after mockup generation (mockup is final preview only)
 
 TRANSPARENCY CHECKS:
 • DTG/Screen Printing: Requires transparent background
@@ -1183,13 +1253,16 @@ SMART SUGGESTION TRIGGERS:
 1. LOW DPI DETECTION (<150 DPI):
    → "This image is {dpi} DPI. For quality printing, shall I upscale to 300 DPI first?"
 
-2. BACKGROUND REMOVAL AFTER RESIZE:
+2. SOLID BACKGROUND + PRINT SIZE REQUEST:
+   → "I'll crop excess background first, then upscale—maximizes design content for print."
+
+3. BACKGROUND REMOVAL AFTER RESIZE:
    → "I'll upscale first, then remove background for cleaner edges."
 
-3. COLOR KNOCKOUT WITHOUT SURFACE INFO:
+4. COLOR KNOCKOUT WITHOUT SURFACE INFO:
    → "What color will this print on? (affects transparency handling)"
 
-4. MOCKUP BEFORE EDITING:
+5. MOCKUP BEFORE EDITING:
    → "For best results, I'll complete edits before creating the mockup."
 
 RESPONSE TONE:
@@ -1456,32 +1529,41 @@ async function executeToolSafely(
     }
 
     case 'background_remover': {
-      const blob = await removeBackground(
-        imageUrl,
-        {
-          model: parameters.model || 'general',
+      // Convert URL to File for removeBackground function
+      const blob = await dataUrlToBlob(imageUrl);
+      const imageFile = await blobToFile(blob, 'image.png', blob.type || 'image/png');
+
+      const resultUrl = await removeBackground({
+        image: imageFile,
+        settings: {
+          model: parameters.model || 'bria',
         },
-        (progress, msg) => {
+        onProgress: (progress, msg) => {
           console.log(`[Tool:background_remover] ${progress}% - ${msg}`);
         }
-      );
+      });
 
-      return URL.createObjectURL(blob);
+      return resultUrl;
     }
 
     case 'upscaler': {
-      const blob = await upscaleImage(
-        imageUrl,
-        {
-          scale: parameters.scale || 2,
-          algorithm: parameters.algorithm || 'lanczos',
-        },
-        (progress, msg) => {
-          console.log(`[Tool:upscaler] ${progress}% - ${msg}`);
-        }
-      );
+      // Convert URL to File for upscaleImage function
+      const blob = await dataUrlToBlob(imageUrl);
+      const imageFile = await blobToFile(blob, 'image.png', blob.type || 'image/png');
 
-      return URL.createObjectURL(blob);
+      const resultUrl = await upscaleImage({
+        image: imageFile,
+        settings: {
+          model: 'standard', // Use standard model (Real-ESRGAN)
+          scaleFactor: parameters.scale || 2,
+          faceEnhance: parameters.faceEnhance,
+        },
+        onProgress: (progress, msg) => {
+          console.log(`[Tool:upscaler] ${progress}% - ${msg}`);
+        },
+      });
+
+      return resultUrl;
     }
 
     case 'extract_color_palette': {
@@ -1578,22 +1660,38 @@ export function isOrchestratorReady(): boolean {
 
 /**
  * Detect if clarification is needed based on complexity and print concerns
+ * Returns confidence score indicating how certain the AI is about the workflow
  */
 function detectClarificationNeed(
   functionCalls: Array<{ toolName: string; parameters: any }>,
   imageAnalysis: ImageAnalysis,
   userMessage: string
-): { needsClarification: boolean; reason: string } {
+): {
+  needsClarification: boolean;
+  reason: string;
+  overallConfidence: number;  // 0-1 confidence in understanding the workflow
+} {
+  let confidenceScore = 0.9; // Start high for single operations
+
   // Simple single-step operations don't need clarification
   if (functionCalls.length === 1) {
-    return { needsClarification: false, reason: 'Single operation' };
+    return {
+      needsClarification: false,
+      reason: 'Single operation',
+      overallConfidence: 0.95  // Very confident for simple requests
+    };
   }
+
+  // Reduce confidence for each additional operation
+  const complexityPenalty = Math.min((functionCalls.length - 1) * 0.1, 0.3);
+  confidenceScore -= complexityPenalty;
 
   // 3+ operations always show clarification
   if (functionCalls.length >= 3) {
     return {
       needsClarification: true,
       reason: 'Complex multi-step workflow (3+ operations)',
+      overallConfidence: Math.max(0.6 - (functionCalls.length - 3) * 0.05, 0.4)
     };
   }
 
@@ -1601,11 +1699,16 @@ function detectClarificationNeed(
   const effectiveDPI = imageAnalysis.dpi || 72;
   const hasPrintConcern = effectiveDPI < 300;
 
+  if (hasPrintConcern) {
+    confidenceScore -= 0.1; // Reduce confidence due to print concerns
+  }
+
   // Low DPI + multiple operations = clarify
   if (hasPrintConcern && functionCalls.length > 1) {
     return {
       needsClarification: true,
       reason: 'Low DPI with multiple operations',
+      overallConfidence: Math.max(confidenceScore - 0.1, 0.5)
     };
   }
 
@@ -1626,6 +1729,7 @@ function detectClarificationNeed(
       return {
         needsClarification: true,
         reason: 'Workflow order optimization available',
+        overallConfidence: 0.7  // Medium confidence - order matters but not critical
       };
     }
   }
@@ -1639,10 +1743,15 @@ function detectClarificationNeed(
     return {
       needsClarification: true,
       reason: 'User requested print readiness check',
+      overallConfidence: 0.85  // High confidence user wants analysis
     };
   }
 
-  return { needsClarification: false, reason: 'No clarification needed' };
+  return {
+    needsClarification: false,
+    reason: 'No clarification needed',
+    overallConfidence: Math.max(confidenceScore, 0.6)
+  };
 }
 
 /**
@@ -1692,13 +1801,69 @@ function generatePrintWarnings(
  */
 function generateWorkflowSuggestion(
   originalCalls: Array<{ toolName: string; parameters: any }>,
-  imageAnalysis: ImageAnalysis
+  imageAnalysis: ImageAnalysis,
+  userMessage?: string
 ): SuggestedWorkflow | undefined {
   const hasUpscale = originalCalls.some((c) => c.toolName === 'upscaler');
   const hasBgRemoval = originalCalls.some(
     (c) => c.toolName === 'background_remover'
   );
+  const hasCrop = originalCalls.some((c) => c.toolName === 'cropper');
   const effectiveDPI = imageAnalysis.dpi || 72;
+
+  // Check if user mentions print size
+  const mentionsPrintSize = userMessage && /\d+\s*(?:inch|in|"|x\s*\d+)/i.test(userMessage);
+
+  // Optimization: Crop/trim before upscale for designs with solid backgrounds
+  // This prevents wasting pixels upscaling empty space
+  if (hasUpscale && !imageAnalysis.hasTransparency && mentionsPrintSize && !hasCrop) {
+    const optimizedSteps: ClarificationStep[] = [];
+    let stepNumber = 1;
+
+    // Suggest crop first
+    optimizedSteps.push({
+      number: stepNumber++,
+      description: 'Crop to remove excess background around design',
+      toolName: 'cropper',
+      parameters: { mode: 'auto-trim' },
+      reasoning: 'Maximize design content, minimize wasted pixels on empty background',
+    });
+
+    // Then upscale
+    const upscaleCall = originalCalls.find((c) => c.toolName === 'upscaler');
+    if (upscaleCall) {
+      optimizedSteps.push({
+        number: stepNumber++,
+        description: 'Upscale trimmed design to print size',
+        toolName: 'upscaler',
+        parameters: upscaleCall.parameters,
+        reasoning: 'Focus upscaling power on actual design content',
+      });
+    }
+
+    // Add other operations
+    for (const call of originalCalls) {
+      if (call.toolName !== 'upscaler' && call.toolName !== 'cropper') {
+        optimizedSteps.push({
+          number: stepNumber++,
+          description: `Apply ${call.toolName}`,
+          toolName: call.toolName,
+          parameters: call.parameters,
+        });
+      }
+    }
+
+    return {
+      reason: 'Crop excess background before upscaling to maximize print quality',
+      steps: optimizedSteps,
+      benefits: [
+        'Design fills more of the final print area',
+        'No wasted resolution on empty background',
+        'Better use of GPU processing power',
+        'Cleaner print-ready file',
+      ],
+    };
+  }
 
   // Optimization: Upscale before background removal
   if (hasBgRemoval && effectiveDPI < 300) {
@@ -1960,8 +2125,12 @@ export async function getClaudeToolCalls(
       // Generate workflow suggestion (if optimization available)
       const suggestedWorkflow = generateWorkflowSuggestion(
         functionCalls,
-        imageAnalysis
+        imageAnalysis,
+        request.message
       );
+
+      // Calculate suggestion confidence
+      const suggestionConfidence = suggestedWorkflow ? 0.85 : undefined;
 
       // Build options
       const options: ClarificationOption[] = [];
@@ -1995,12 +2164,17 @@ export async function getClaudeToolCalls(
         printWarnings,
         suggestedWorkflow,
         options,
+        overallConfidence: clarificationCheck.overallConfidence,
+        overallConfidenceLevel: getConfidenceLevel(clarificationCheck.overallConfidence),
+        suggestionConfidence,
       };
 
       console.log('[Orchestrator] Clarification data built:', {
         steps: parsedSteps.length,
         warnings: printWarnings.length,
         hasSuggestion: !!suggestedWorkflow,
+        overallConfidence: clarificationCheck.overallConfidence,
+        confidenceLevel: getConfidenceLevel(clarificationCheck.overallConfidence),
       });
     }
 

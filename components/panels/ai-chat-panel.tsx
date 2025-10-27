@@ -5,6 +5,8 @@ import { DraggablePanel } from "@/components/draggable-panel"
 import { useImageStore } from "@/lib/image-store"
 import { executeToolClientSide } from "@/lib/client-tool-executor"
 import { ImagePreviewModal } from "@/components/image-preview-modal"
+import { AIClarificationMessage } from "@/components/ai-clarification-message"
+import type { ClarificationData as OrchestratorClarificationData } from "@/lib/ai-chat-orchestrator"
 import {
   Sparkles,
   CheckCircle2,
@@ -19,7 +21,8 @@ import {
   ChevronUp,
   Eye,
   Paperclip,
-  X
+  X,
+  Wand2
 } from "lucide-react"
 
 // ============================================================
@@ -56,6 +59,8 @@ interface ChatMessage {
   toolExecutions?: ToolExecution[]
   confidence?: number
   imageResult?: ImageResult
+  clarification?: OrchestratorClarificationData
+  pendingToolCalls?: Array<{ toolName: string; parameters: any }>
 }
 
 interface OrchestratorResponse {
@@ -133,11 +138,13 @@ function ConfidenceBadge({ confidence }: { confidence: number }) {
 function ImageResultDisplay({
   imageResult,
   onView,
-  onApply
+  onApply,
+  onEdit
 }: {
   imageResult: ImageResult
   onView: () => void
   onApply?: () => void
+  onEdit?: () => void
 }) {
   const canApply = imageResult.type === 'edit' && imageResult.status === 'completed'
 
@@ -188,6 +195,18 @@ function ImageResultDisplay({
           </div>
 
           <div className="flex items-center gap-2">
+            {onEdit && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onEdit()
+                }}
+                className="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors flex items-center gap-1"
+              >
+                <Wand2 className="w-3 h-3" />
+                Iterate
+              </button>
+            )}
             <button
               onClick={(e) => {
                 e.stopPropagation()
@@ -629,6 +648,26 @@ export function AIChatPanel({ onClose, zIndex, isActive, onFocus }: AIChatPanelP
         throw new Error(result.error || 'Unknown error')
       }
 
+      // ===== CHECK FOR CLARIFICATION NEEDED =====
+      if (result.clarification && result.clarification.needsClarification) {
+        console.log('[AI Chat] Clarification needed - showing clarification UI')
+
+        // Don't execute tools yet - wait for user to select an option
+        const clarificationMsg: ChatMessage = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: result.message || 'I need clarification about your request.',
+          timestamp: result.timestamp || Date.now(),
+          confidence: result.confidence,
+          clarification: result.clarification,
+          pendingToolCalls: result.toolCalls || [],
+        }
+
+        setMessages(prev => [...prev, clarificationMsg])
+        setIsProcessing(false)
+        return // Exit early - wait for user's clarification response
+      }
+
       // ===== CLIENT-SIDE TOOL EXECUTION =====
       const toolExecutions: ToolExecution[] = []
       let finalResultUrl: string | null = null
@@ -843,15 +882,113 @@ export function AIChatPanel({ onClose, zIndex, isActive, onFocus }: AIChatPanelP
   }
 
   // ============================================================
+  // CLARIFICATION HANDLER
+  // ============================================================
+
+  const handleClarificationOption = async (
+    messageId: string,
+    optionId: 'suggested' | 'original' | 'custom',
+    pendingToolCalls: Array<{ toolName: string; parameters: any }>
+  ) => {
+    // Custom option acts as cancel for now
+    if (optionId === 'custom') {
+      // User cancelled - just add a cancellation message
+      const cancelMsg: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: 'Workflow cancelled. Let me know if you want to try something else!',
+        timestamp: Date.now(),
+        confidence: 100,
+      }
+      setMessages(prev => [...prev, cancelMsg])
+      return
+    }
+
+    // User selected to proceed - execute the pending tool calls
+    setIsProcessing(true)
+
+    try {
+      // Execute tools client-side (reusing logic from handleSendMessage)
+      const toolExecutions: ToolExecution[] = []
+      let currentImageUrl = imageUrl || ''
+
+      if (!currentImageUrl) {
+        throw new Error('No image available to process')
+      }
+
+      for (const toolCall of pendingToolCalls) {
+        const toolResult = await executeToolClientSide(
+          toolCall.toolName,
+          toolCall.parameters,
+          currentImageUrl
+        )
+
+        if (toolResult.success && toolResult.resultUrl) {
+          toolExecutions.push({
+            toolName: toolCall.toolName,
+            parameters: toolCall.parameters,
+            success: true,
+            resultImageUrl: toolResult.resultUrl,
+            confidence: 95,
+          })
+          currentImageUrl = toolResult.resultUrl
+        } else {
+          toolExecutions.push({
+            toolName: toolCall.toolName,
+            parameters: toolCall.parameters,
+            success: false,
+            confidence: 0,
+          })
+        }
+      }
+
+      // Add completion message
+      const completionMsg: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: optionId === 'suggested'
+          ? '✓ Executed optimized workflow!'
+          : '✓ Executed your requested workflow!',
+        timestamp: Date.now(),
+        toolExecutions,
+        confidence: 95,
+      }
+
+      setMessages(prev => [...prev, completionMsg])
+
+      // Update canvas if we have a final result
+      if (currentImageUrl !== imageUrl) {
+        const imageResponse = await fetch(currentImageUrl)
+        const imageBlob = await imageResponse.blob()
+        const imageFile = new File([imageBlob], 'ai-edited-image.png', { type: imageBlob.type })
+        const imageObjectUrl = URL.createObjectURL(imageBlob)
+        setImage(imageObjectUrl, imageFile, 'ai-edited-image.png')
+
+        const { addToHistory } = useImageStore.getState()
+        addToHistory('AI Edit: Clarified workflow')
+      }
+    } catch (error) {
+      console.error('[AI Chat] Clarification execution error:', error)
+      const errorMsg: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: `Error executing workflow: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        timestamp: Date.now(),
+        confidence: 0,
+      }
+      setMessages(prev => [...prev, errorMsg])
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  // ============================================================
   // SUGGESTED PROMPTS
   // ============================================================
 
   const suggestedPrompts = [
     'Remove the background',
     'Auto-detect and trim',
-    'Trim orange spaces',
-    'Rotate 90 degrees',
-    'Resize to 800px',
     'Show color palette',
   ]
 
@@ -877,24 +1014,8 @@ export function AIChatPanel({ onClose, zIndex, isActive, onFocus }: AIChatPanelP
       onFocus={onFocus}
     >
       <div className="flex flex-col h-full">
-        {/* Info Banner */}
-        <div className="px-4 pt-4 pb-2">
-          <div
-            className="flex items-start gap-2 p-2 rounded-lg border-2 border-blue-500/30 bg-blue-500/10"
-            style={{
-              boxShadow: "2px 2px 0px 0px hsl(var(--foreground) / 0.1)",
-            }}
-          >
-            <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-            <div className="text-xs text-foreground/70">
-              <p className="font-semibold mb-0.5">Phase 8: AI Design Assistant</p>
-              <p>Natural language image editing powered by Claude Vision API</p>
-            </div>
-          </div>
-        </div>
-
         {/* Image Status */}
-        <div className="px-4 pb-2">
+        <div className="px-4 pt-4 pb-2">
           <div className="flex items-center gap-2 text-xs text-foreground/60">
             <ImageIcon className="w-3 h-3" />
             <span>
@@ -936,6 +1057,52 @@ export function AIChatPanel({ onClose, zIndex, isActive, onFocus }: AIChatPanelP
                   {message.content}
                 </p>
 
+                {/* Clarification Component */}
+                {message.clarification && message.pendingToolCalls && (
+                  <div className="mt-3">
+                    <AIClarificationMessage
+                      data={{
+                        messageId: message.id,
+                        userRequest: message.clarification.parsedSteps.map((s: any) => s.description).join(', '),
+                        parsedSteps: message.clarification.parsedSteps.map((step: any) => ({
+                          stepNumber: step.number,
+                          operation: step.description,
+                          toolName: step.toolName,
+                          parameters: step.parameters,
+                        })),
+                        printWarnings: message.clarification.printWarnings.map((w: any) => ({
+                          type: 'low_dpi' as const,
+                          severity: w.severity as 'error' | 'warning' | 'info',
+                          message: w.message,
+                          suggestion: w.suggestedFix,
+                        })),
+                        suggestedWorkflow: message.clarification.suggestedWorkflow ? message.clarification.suggestedWorkflow.steps.map((step: any) => ({
+                          stepNumber: step.number,
+                          operation: step.description,
+                          toolName: step.toolName,
+                          parameters: step.parameters,
+                        })) : undefined,
+                        suggestedReason: message.clarification.suggestedWorkflow?.reason,
+                        options: message.clarification.options.map((opt: any) => ({
+                          id: opt.id === 'execute-suggested' ? 'suggested' as const :
+                              opt.id === 'execute-original' ? 'original' as const : 'custom' as const,
+                          label: opt.label,
+                          description: opt.description,
+                          toolCalls: [],
+                          isRecommended: opt.id === 'execute-suggested',
+                        })),
+                        overallConfidence: message.clarification.overallConfidence,
+                        overallConfidenceLevel: message.clarification.overallConfidenceLevel,
+                        suggestionConfidence: message.clarification.suggestionConfidence,
+                      }}
+                      onSelectOption={(optionId) => {
+                        handleClarificationOption(message.id, optionId, message.pendingToolCalls!)
+                      }}
+                      isLoading={isProcessing}
+                    />
+                  </div>
+                )}
+
                 {/* Image Result Display */}
                 {message.imageResult && (
                   <ImageResultDisplay
@@ -951,6 +1118,30 @@ export function AIChatPanel({ onClose, zIndex, isActive, onFocus }: AIChatPanelP
                         canApply: message.imageResult!.type === 'edit',
                       })
                     }}
+                    onEdit={message.imageResult.status === 'completed' ? async () => {
+                      // Attach result as reference image for iteration
+                      try {
+                        const response = await fetch(message.imageResult!.url)
+                        const blob = await response.blob()
+                        const fileName = message.imageResult!.type === 'edit' ? 'ai-edit-result.png' : 'mockup-result.png'
+                        const file = new File([blob], fileName, { type: blob.type })
+                        const url = URL.createObjectURL(blob)
+
+                        setAttachedImage({
+                          url,
+                          file,
+                          name: fileName
+                        })
+
+                        // Prepopulate input with helpful prompt
+                        setInputMessage('Make the following edits: ')
+
+                        // Scroll to input
+                        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+                      } catch (error) {
+                        console.error('Failed to attach image for editing:', error)
+                      }
+                    } : undefined}
                     onApply={message.imageResult.type === 'edit' ? async () => {
                       // Apply edit to canvas
                       try {
@@ -1020,7 +1211,7 @@ export function AIChatPanel({ onClose, zIndex, isActive, onFocus }: AIChatPanelP
                 key={prompt}
                 onClick={() => handleSuggestedPrompt(prompt)}
                 disabled={isProcessing}
-                className="text-xs px-2.5 py-1 border border-foreground/20 rounded-full hover:bg-foreground/5 hover:border-foreground/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="text-xs px-2.5 py-1 bg-foreground text-background border-2 border-foreground rounded-full hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {prompt}
               </button>

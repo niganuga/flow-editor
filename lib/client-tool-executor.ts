@@ -309,6 +309,7 @@ export async function executeToolClientSide(
           prompt: parameters.prompt,
           imageUrl,
           strength: parameters.strength || 0.75,
+          model: parameters.model || 'qwen/qwen-image-edit-plus',
         }, (progress, msg) => {
           console.log(`[ClientExecutor:edit_image] ${progress}% - ${msg}`)
         })
@@ -332,6 +333,9 @@ export async function executeToolClientSide(
           imageUrl,
           placement: parameters.placement || 'center',
           size: parameters.size || 'medium',
+          background: parameters.background || 'studio',
+          angle: parameters.angle || 'front',
+          style: parameters.style || 'product-only',
         }, (progress, msg) => {
           console.log(`[ClientExecutor:generate_mockup] ${progress}% - ${msg}`)
         })

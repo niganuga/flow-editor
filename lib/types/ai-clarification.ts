@@ -55,6 +55,11 @@ export interface PrintReadinessWarning {
 }
 
 /**
+ * Confidence level for AI decisions
+ */
+export type ConfidenceLevel = 'high' | 'medium' | 'low';
+
+/**
  * Individual workflow step parsed from user request
  */
 export interface WorkflowStep {
@@ -63,6 +68,8 @@ export interface WorkflowStep {
   readonly toolName: KnownToolName;  // Internal tool name
   readonly parameters: Record<string, any>;
   readonly estimatedTime?: number;   // Estimated execution time in seconds
+  readonly confidence?: number;      // 0-1: How confident AI is about this step
+  readonly confidenceLevel?: ConfidenceLevel; // User-friendly confidence indicator
 }
 
 /**
@@ -87,6 +94,9 @@ export interface ClarificationData {
   readonly suggestedWorkflow?: ReadonlyArray<WorkflowStep>;
   readonly suggestedReason?: string;
   readonly options: ReadonlyArray<ClarificationOption>;
+  readonly overallConfidence?: number;           // 0-1: Overall confidence in workflow understanding
+  readonly overallConfidenceLevel?: ConfidenceLevel; // User-friendly overall confidence
+  readonly suggestionConfidence?: number;        // 0-1: Confidence in suggested workflow (if provided)
 }
 
 /**
@@ -131,6 +141,18 @@ export function canExecuteDirectly(
   response: ClarificationResponse
 ): response is ClarificationResponse & { directExecution: { toolCalls: ReadonlyArray<ToolCall> } } {
   return response.needsClarification === false && response.directExecution !== undefined;
+}
+
+/**
+ * Convert numeric confidence (0-1) to user-friendly level
+ *
+ * @param confidence - Numeric confidence score (0-1)
+ * @returns Confidence level category
+ */
+export function getConfidenceLevel(confidence: number): ConfidenceLevel {
+  if (confidence >= 0.8) return 'high';
+  if (confidence >= 0.5) return 'medium';
+  return 'low';
 }
 
 /**

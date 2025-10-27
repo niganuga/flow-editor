@@ -29,10 +29,10 @@ The Flow Editor codebase contains **CRITICAL security vulnerabilities** that req
 
 **Finding:**
 ```
-ANTHROPIC_API_KEY=sk-ant-xxxxx...[REDACTED]
-GEMINI_API_KEY=AIzaSyxxxxx...[REDACTED]
-OPENAI_API_KEY=sk-proj-xxxxx...[REDACTED]
-REPLICATE_API_TOKEN=r8_xxxxx...[REDACTED]
+ANTHROPIC_API_KEY=sk-ant-api03-xxxxx... [REDACTED]
+GEMINI_API_KEY=AIzaSyxxxxx... [REDACTED]
+OPENAI_API_KEY=sk-proj-xxxxx... [REDACTED]
+REPLICATE_API_TOKEN=r8_xxxxx... [REDACTED]
 ```
 
 **Impact:**

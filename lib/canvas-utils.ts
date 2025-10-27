@@ -340,7 +340,7 @@ export async function loadImage(url: string): Promise<any> {
         img.crossOrigin = "anonymous";
       }
       img.onload = () => resolve(img);
-      img.onerror = (error) => {
+      img.onerror = (error: string | Event) => {
         console.error('Image load error for URL:', url, error);
         reject(new Error(`Failed to load image from ${url.substring(0, 50)}...`));
       };

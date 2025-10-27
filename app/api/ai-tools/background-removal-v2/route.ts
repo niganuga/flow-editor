@@ -17,13 +17,13 @@ interface BackgroundRemovalV2Request {
   includeQualityValidation?: boolean;
 }
 
-// BRIA RMBG 2.0 configuration (proper transparency support)
+// BRIA Product Cutout configuration (high-res support for product images)
 const BRIA_V2_CONFIG = {
-  model: 'bria/remove-background',
-  version: '0d70cc721b10cd04ea9194a33d27d7004b6aebba3911fa145eedf6cfe307ccac',
-  name: 'BRIA RMBG 2.0',
+  model: 'bria/product-cutout',
+  version: 'latest', // Using latest version for best quality
+  name: 'BRIA Product Cutout',
   cost: 0.018,
-  description: 'Premium quality with 256-level alpha transparency',
+  description: 'High-resolution product cutout with 256-level alpha transparency',
 };
 
 const REPLICATE_API_TOKEN = process.env["REPLICATE_API_TOKEN"] || process.env["REPLICATE_API_KEY"];
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[BG Removal V2] Starting with BRIA RMBG 2.0...');
+    console.log('[BG Removal V2] Starting with BRIA Product Cutout (high-res support)...');
 
     // Start timing
     const startTime = Date.now();
@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create prediction directly with Replicate API
+    // Use model name for product-cutout (latest version)
     const createResponse = await fetch('https://api.replicate.com/v1/predictions', {
       method: 'POST',
       headers: {
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
         Authorization: `Token ${REPLICATE_API_TOKEN}`,
       },
       body: JSON.stringify({
-        version: BRIA_V2_CONFIG.version,
+        model: BRIA_V2_CONFIG.model,
         input,
       }),
     });

@@ -195,7 +195,7 @@ export function saveUpscalingComparison(
   console.log(`  Original: ${paths.original.replace(process.cwd(), '.')}`)
   console.log(`  V1:       ${paths.v1.replace(process.cwd(), '.')}`)
   for (const [modelName, path] of Object.entries(paths.v2)) {
-    console.log(`  V2 (${modelName}): ${path.replace(process.cwd(), '.')}`)
+    console.log(`  V2 (${modelName}): ${(path as string).replace(process.cwd(), '.')}`)
   }
 
   return paths

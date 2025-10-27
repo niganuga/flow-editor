@@ -135,8 +135,6 @@ Be conversational, helpful, and concise. Provide actionable advice.`,
       throw new Error('Google AI API key not configured')
     }
 
-    const model = this.googleAI.models.get('gemini-2.5-pro-latest')
-
     // Build content parts
     const parts: any[] = []
 
@@ -187,12 +185,9 @@ ${conversationContext ? `\n\nConversation history:\n${conversationContext}\n\n` 
       text: systemInstruction,
     })
 
-    const result = await model.generateContent({
+    const result = await this.googleAI.models.generateContent({
+      model: 'gemini-2.5-pro-latest',
       contents: [{ role: 'user', parts }],
-      generationConfig: {
-        maxOutputTokens: request.maxTokens || 4096,
-        temperature: 0.7,
-      },
     })
 
     return {

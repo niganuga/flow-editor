@@ -22,6 +22,9 @@ import { canvasToBlob } from '../file-utils';
 export type PaletteAlgorithm = 'smart' | 'detailed';
 export type BlendMode = 'replace' | 'overlay' | 'multiply';
 
+// Re-export ColorInfo from color-utils for external use
+export type { ColorInfo } from '../color-utils';
+
 export interface ColorRegion {
   /** Array of pixel coordinates belonging to this region */
   pixels: Array<{ x: number; y: number }>;

@@ -53,10 +53,10 @@ The AI Photo Editor demonstrates **excellent technical architecture** with moder
 **Confidence:** 100%
 
 ```
-ANTHROPIC_API_KEY=sk-ant-api03-dKioMCyrw... (EXPOSED!)
-GEMINI_API_KEY=AIzaSyBR4tu5CME... (EXPOSED!)
-OPENAI_API_KEY=sk-proj-BXVq7ZfKxV... (EXPOSED!)
-REPLICATE_API_KEY=r8_HDHPGoRgyeLge... (EXPOSED!)
+ANTHROPIC_API_KEY=sk-ant-xxxxx... [REDACTED]
+GEMINI_API_KEY=AIzaSyxxxxx... [REDACTED]
+OPENAI_API_KEY=sk-proj-xxxxx... [REDACTED]
+REPLICATE_API_KEY=r8_xxxxx... [REDACTED]
 ```
 
 **IMMEDIATE ACTIONS:**

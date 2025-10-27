@@ -9,7 +9,6 @@ import {
   Palette,
   Layers,
   Sparkles,
-  History,
 } from "lucide-react"
 import type { Tool } from "@/app/page"
 import { useState } from "react"
@@ -28,7 +27,6 @@ const tools = [
   { id: "recolor" as Tool, icon: Palette, label: "Recolor" },
   { id: "blend" as Tool, icon: Layers, label: "Texture+Cut" },
   { id: "ai-chat" as Tool, icon: Sparkles, label: "AI Chat" },
-  { id: "history" as Tool, icon: History, label: "History" },
 ]
 
 export function BottomDock({ activeTool, onToolClick }: BottomDockProps) {

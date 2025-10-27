@@ -107,28 +107,28 @@ export async function analyzeImageServerSide(
     // ===== STEP 4: Detect transparency precisely =====
     onProgress?.(45, 'Analyzing transparency...');
 
-    const hasTransparency = await detectTransparencyFromImageData(imageData);
+    const hasTransparency = await detectTransparencyFromImageData(imageData as ImageData);
 
     onProgress?.(55, 'Extracting dominant colors...');
 
     // ===== STEP 5: Extract dominant colors =====
-    const dominantColors = await extractDominantColors(imageData, 9);
+    const dominantColors = await extractDominantColors(imageData as ImageData, 9);
 
     onProgress?.(65, 'Counting unique colors...');
 
     // ===== STEP 6: Count unique colors =====
-    const uniqueColorCount = await countUniqueColors(imageData);
+    const uniqueColorCount = await countUniqueColors(imageData as ImageData);
 
     onProgress?.(75, 'Calculating image sharpness...');
 
     // ===== STEP 7: Calculate sharpness =====
-    const sharpnessScore = await calculateSharpness(imageData, width, height);
+    const sharpnessScore = await calculateSharpness(imageData as ImageData, width, height);
     const isBlurry = sharpnessScore < 50;
 
     onProgress?.(85, 'Detecting noise levels...');
 
     // ===== STEP 8: Calculate noise =====
-    const noiseLevel = await calculateNoise(imageData, width, height);
+    const noiseLevel = await calculateNoise(imageData as ImageData, width, height);
 
     onProgress?.(90, 'Calculating print readiness...');
 

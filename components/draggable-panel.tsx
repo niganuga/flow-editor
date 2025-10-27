@@ -14,6 +14,10 @@ interface DraggablePanelProps {
   zIndex?: number
   isActive?: boolean
   onFocus?: () => void
+  className?: string
+  shadowStyle?: string
+  forcePosition?: { x: number; y: number } // For auto-arrange
+  arrangeKey?: number // Trigger position update
 }
 
 export function DraggablePanel({
@@ -26,6 +30,10 @@ export function DraggablePanel({
   zIndex = 40,
   isActive = false,
   onFocus,
+  className = '',
+  shadowStyle = "6px 6px 0px 0px rgba(0, 0, 0, 1)",
+  forcePosition,
+  arrangeKey = 0,
 }: DraggablePanelProps) {
   // Constrain initial position to viewport
   const getConstrainedPosition = (pos: { x: number; y: number }, size: { width: number; height: number }) => {
@@ -81,6 +89,13 @@ export function DraggablePanel({
     setSize(responsiveSize)
     setPosition(constrainedPosition)
   }, []) // Only run once on mount
+
+  // Apply forced position from auto-arrange
+  useEffect(() => {
+    if (forcePosition) {
+      setPosition(forcePosition)
+    }
+  }, [forcePosition, arrangeKey])
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (panelRef.current) {
@@ -177,13 +192,13 @@ export function DraggablePanel({
   return (
     <div
       ref={panelRef}
-      className={`fixed border-[3px] border-foreground bg-card flex flex-col rounded-xl shadow-xl max-w-[95vw] max-h-[90vh] overflow-hidden ${isActive ? 'ring-2 ring-accent' : ''}`}
+      className={`fixed border-[3px] border-foreground bg-card flex flex-col rounded-xl shadow-xl max-w-[95vw] max-h-[90vh] overflow-hidden ${isActive ? 'ring-2 ring-accent' : ''} ${className}`}
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
         width: `${size.width}px`,
         height: `${size.height}px`,
-        boxShadow: "6px 6px 0px 0px rgba(0, 0, 0, 1)",
+        boxShadow: shadowStyle,
         zIndex,
       }}
       onMouseDown={(e) => {
@@ -208,7 +223,7 @@ export function DraggablePanel({
           <X className="w-4 h-4" strokeWidth={3} />
         </button>
       </div>
-      <div className="bg-card flex-1 overflow-auto min-h-0">{children}</div>
+      <div className="bg-card flex-1 overflow-auto min-h-0 p-4">{children}</div>
 
       {/* Resize handles - all 4 corners with enhanced visual feedback */}
       {/* Top-left corner */}
