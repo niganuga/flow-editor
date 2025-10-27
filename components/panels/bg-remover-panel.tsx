@@ -19,9 +19,11 @@ interface BgRemoverPanelProps {
   zIndex?: number
   isActive?: boolean
   onFocus?: () => void
+  forcePosition?: { x: number; y: number }
+  arrangeKey?: number
 }
 
-export function BgRemoverPanel({ onClose, zIndex, isActive, onFocus }: BgRemoverPanelProps) {
+export function BgRemoverPanel({ onClose, zIndex, isActive, onFocus, forcePosition, arrangeKey }: BgRemoverPanelProps) {
   const { imageUrl, setImage } = useImageStore()
   const { addMessage } = useMessageStore()
 
@@ -147,6 +149,8 @@ export function BgRemoverPanel({ onClose, zIndex, isActive, onFocus }: BgRemover
       zIndex={zIndex}
       isActive={isActive}
       onFocus={onFocus}
+      forcePosition={forcePosition}
+      arrangeKey={arrangeKey}
     >
       <div className="flex flex-col h-full p-3">
         {/* Preview */}

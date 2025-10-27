@@ -78,6 +78,8 @@ interface AIChatPanelProps {
   zIndex?: number
   isActive?: boolean
   onFocus?: () => void
+  forcePosition?: { x: number; y: number }
+  arrangeKey?: number
 }
 
 // ============================================================
@@ -337,7 +339,7 @@ function ToolExecutionCard({ execution }: { execution: ToolExecution }) {
 // MAIN COMPONENT
 // ============================================================
 
-export function AIChatPanel({ onClose, zIndex, isActive, onFocus }: AIChatPanelProps) {
+export function AIChatPanel({ onClose, zIndex, isActive, onFocus, forcePosition, arrangeKey }: AIChatPanelProps) {
   // State
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputValue, setInputValue] = useState("")
@@ -1012,6 +1014,8 @@ export function AIChatPanel({ onClose, zIndex, isActive, onFocus }: AIChatPanelP
       zIndex={zIndex}
       isActive={isActive}
       onFocus={onFocus}
+      forcePosition={forcePosition}
+      arrangeKey={arrangeKey}
     >
       <div className="flex flex-col h-full">
         {/* Image Status */}
@@ -1134,7 +1138,7 @@ export function AIChatPanel({ onClose, zIndex, isActive, onFocus }: AIChatPanelP
                         })
 
                         // Prepopulate input with helpful prompt
-                        setInputMessage('Make the following edits: ')
+                        setInputValue('Make the following edits: ')
 
                         // Scroll to input
                         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })

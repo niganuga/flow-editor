@@ -19,7 +19,16 @@ interface TransparencyAnalysis {
   semiTransparent: { count: number; percentage: string }
 }
 
-export function FileValidatorPanel({ onClose, zIndex, isActive, onFocus }: { onClose: () => void; zIndex?: number; isActive?: boolean; onFocus?: () => void }) {
+interface FileValidatorPanelProps {
+  onClose: () => void
+  zIndex?: number
+  isActive?: boolean
+  onFocus?: () => void
+  forcePosition?: { x: number; y: number }
+  arrangeKey?: number
+}
+
+export function FileValidatorPanel({ onClose, zIndex, isActive, onFocus, forcePosition, arrangeKey }: FileValidatorPanelProps) {
   const { imageFile, imageName, imageUrl } = useImageStore()
   const [validationResults, setValidationResults] = useState<{
     fileName: string
@@ -458,6 +467,8 @@ export function FileValidatorPanel({ onClose, zIndex, isActive, onFocus }: { onC
       isActive={isActive}
       onFocus={onFocus}
       defaultSize={{ width: 360, height: 550 }}
+      forcePosition={forcePosition}
+      arrangeKey={arrangeKey}
     >
       <div className="p-3 space-y-3">
         {!imageFile ? (

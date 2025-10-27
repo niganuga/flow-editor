@@ -17,9 +17,11 @@ interface TextureCutPanelProps {
   zIndex?: number
   isActive?: boolean
   onFocus?: () => void
+  forcePosition?: { x: number; y: number }
+  arrangeKey?: number
 }
 
-export function TextureCutPanel({ onClose, zIndex, isActive, onFocus }: TextureCutPanelProps) {
+export function TextureCutPanel({ onClose, zIndex, isActive, onFocus, forcePosition, arrangeKey }: TextureCutPanelProps) {
   const { imageUrl, setImage } = useImageStore()
   const { addMessage } = useMessageStore()
 
@@ -236,6 +238,8 @@ export function TextureCutPanel({ onClose, zIndex, isActive, onFocus }: TextureC
       zIndex={zIndex}
       isActive={isActive}
       onFocus={onFocus}
+      forcePosition={forcePosition}
+      arrangeKey={arrangeKey}
     >
       <div className="flex flex-col h-full p-3">
         {/* Preview */}

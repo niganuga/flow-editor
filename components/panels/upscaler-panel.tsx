@@ -14,9 +14,11 @@ interface UpscalerPanelProps {
   zIndex?: number
   isActive?: boolean
   onFocus?: () => void
+  forcePosition?: { x: number; y: number }
+  arrangeKey?: number
 }
 
-export function UpscalerPanel({ onClose, zIndex, isActive, onFocus }: UpscalerPanelProps) {
+export function UpscalerPanel({ onClose, zIndex, isActive, onFocus, forcePosition, arrangeKey }: UpscalerPanelProps) {
   const { imageUrl, setImage } = useImageStore()
   const { addMessage } = useMessageStore()
 
@@ -153,6 +155,8 @@ export function UpscalerPanel({ onClose, zIndex, isActive, onFocus }: UpscalerPa
       zIndex={zIndex}
       isActive={isActive}
       onFocus={onFocus}
+      forcePosition={forcePosition}
+      arrangeKey={arrangeKey}
     >
       <div className="flex flex-col h-full p-3">
         {/* Preview */}

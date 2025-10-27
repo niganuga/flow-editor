@@ -1,0 +1,26 @@
+
+> my-v0-project@0.1.0 build /Users/makko/Code/OneFlow/flow-editor
+> next build
+
+   ▲ Next.js 16.0.0 (Turbopack)
+   - Environments: .env.local
+   - Experiments (use with caution):
+     · optimizePackageImports
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 1041.1ms
+   Running TypeScript ...
+Failed to compile.
+
+./lib/error-handler.ts:363:43
+Type error: Property 'changeMetrics' does not exist on type 'ResultValidation'.
+
+[0m [90m 361 |[39m         confidence[33m:[39m [33mMath[39m[33m.[39mmin(validation[33m.[39mconfidence[33m,[39m resultValidation[33m.[39mqualityScore)[33m,[39m
+ [90m 362 |[39m         resultMetrics[33m:[39m {
+[31m[1m>[22m[39m[90m 363 |[39m           pixelsChanged[33m:[39m resultValidation[33m.[39mchangeMetrics[33m.[39mpixelsChanged[33m,[39m
+ [90m     |[39m                                           [31m[1m^[22m[39m
+ [90m 364 |[39m           percentageChanged[33m:[39m resultValidation[33m.[39mchangeMetrics[33m.[39mpercentageChanged[33m,[39m
+ [90m 365 |[39m           executionTimeMs[33m:[39m [33mDate[39m[33m.[39mnow() [33m-[39m attemptStartTime[33m,[39m
+ [90m 366 |[39m           qualityScore[33m:[39m resultValidation[33m.[39mqualityScore[33m,[39m[0m
+Next.js build worker exited with code: 1 and signal: null
+ ELIFECYCLE  Command failed with exit code 1.

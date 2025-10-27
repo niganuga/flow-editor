@@ -1,0 +1,27 @@
+
+> my-v0-project@0.1.0 build /Users/makko/Code/OneFlow/flow-editor
+> next build
+
+   ▲ Next.js 16.0.0 (Turbopack)
+   - Environments: .env.local
+   - Experiments (use with caution):
+     · optimizePackageImports
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 987.0ms
+   Running TypeScript ...
+Failed to compile.
+
+./tests/setup.ts:109:60
+Type error: Argument of type 'ProgressEvent<EventTarget>' is not assignable to parameter of type 'ProgressEvent<FileReader>'.
+  Type 'EventTarget' is missing the following properties from type 'FileReader': error, onabort, onerror, onload, and 13 more.
+
+[0m [90m 107 |[39m       [36mthis[39m[33m.[39mreadyState [33m=[39m [35m2[39m
+ [90m 108 |[39m       [36mif[39m ([36mthis[39m[33m.[39monloadend) {
+[31m[1m>[22m[39m[90m 109 |[39m         [36mthis[39m[33m.[39monloadend[33m.[39mcall([36mthis[39m [36mas[39m unknown [36mas[39m [33mFileReader[39m[33m,[39m [36mnew[39m [33mProgressEvent[39m([32m'loadend'[39m))
+ [90m     |[39m                                                            [31m[1m^[22m[39m
+ [90m 110 |[39m       }
+ [90m 111 |[39m       [36mif[39m ([36mthis[39m[33m.[39monload) {
+ [90m 112 |[39m         [36mthis[39m[33m.[39monload[33m.[39mcall([36mthis[39m [36mas[39m unknown [36mas[39m [33mFileReader[39m[33m,[39m [36mnew[39m [33mProgressEvent[39m([32m'load'[39m))[0m
+Next.js build worker exited with code: 1 and signal: null
+ ELIFECYCLE  Command failed with exit code 1.

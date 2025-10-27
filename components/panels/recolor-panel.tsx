@@ -14,11 +14,13 @@ interface RecolorPanelProps {
   zIndex?: number
   isActive?: boolean
   onFocus?: () => void
+  forcePosition?: { x: number; y: number }
+  arrangeKey?: number
 }
 
 type BackgroundMode = "transparent" | "black" | "white"
 
-export function RecolorPanel({ onClose, zIndex, isActive, onFocus }: RecolorPanelProps) {
+export function RecolorPanel({ onClose, zIndex, isActive, onFocus, forcePosition, arrangeKey }: RecolorPanelProps) {
   const { imageUrl, setImage } = useImageStore()
   const { addMessage } = useMessageStore()
 
@@ -597,6 +599,8 @@ export function RecolorPanel({ onClose, zIndex, isActive, onFocus }: RecolorPane
         zIndex={zIndex}
         isActive={isActive}
         onFocus={onFocus}
+        forcePosition={forcePosition}
+        arrangeKey={arrangeKey}
       >
         <div className="flex flex-col h-full p-3">
           {/* Preview */}

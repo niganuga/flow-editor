@@ -25,9 +25,11 @@ interface HistoryPanelProps {
   zIndex?: number
   isActive?: boolean
   onFocus?: () => void
+  forcePosition?: { x: number; y: number }
+  arrangeKey?: number
 }
 
-export function HistoryPanel({ onClose, zIndex, isActive, onFocus }: HistoryPanelProps) {
+export function HistoryPanel({ onClose, zIndex, isActive, onFocus, forcePosition, arrangeKey }: HistoryPanelProps) {
   const { history, historyIndex, jumpToHistory, undo, redo, canUndo, canRedo } = useImageStore()
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
@@ -106,6 +108,8 @@ export function HistoryPanel({ onClose, zIndex, isActive, onFocus }: HistoryPane
       zIndex={zIndex}
       isActive={isActive}
       onFocus={onFocus}
+      forcePosition={forcePosition}
+      arrangeKey={arrangeKey}
     >
       <div className="flex flex-col h-full p-3">
         {/* Quick Actions */}
