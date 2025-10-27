@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { TopBar } from "@/components/top-bar"
 import { BottomDock } from "@/components/bottom-dock"
-import { Canvas } from "@/components/canvas"
+import { BackgroundCanvas } from "@/components/background-canvas"
 import { FileValidatorPanel } from "@/components/panels/file-validator-panel"
 import { UpscalerPanel } from "@/components/panels/upscaler-panel"
 import { BgRemoverPanel } from "@/components/panels/bg-remover-panel"
@@ -24,7 +24,6 @@ export type Tool =
   | "blend"
   | "ai-chat"
   | "history"
-  | "canvas"
 
 interface PanelPosition {
   x: number
@@ -33,7 +32,6 @@ interface PanelPosition {
 
 // Default panel sizes (can be customized per panel type)
 const PANEL_SIZES: Record<Tool, { width: number; height: number }> = {
-  canvas: { width: 400, height: 500 },
   validator: { width: 350, height: 450 },
   upscaler: { width: 380, height: 420 },
   "bg-remover": { width: 380, height: 400 },
@@ -47,20 +45,21 @@ const PANEL_SIZES: Record<Tool, { width: number; height: number }> = {
 
 export default function PhotoEditorPage() {
   const [activeTool, setActiveTool] = useState<Tool | null>(null)
-  const [openPanels, setOpenPanels] = useState<Set<Tool>>(new Set(["canvas"]))
-  const [focusedPanel, setFocusedPanel] = useState<Tool>("canvas")
+  const [openPanels, setOpenPanels] = useState<Set<Tool>>(new Set())
+  const [focusedPanel, setFocusedPanel] = useState<Tool | null>(null)
   const [panelPositions, setPanelPositions] = useState<Record<string, PanelPosition>>({})
   const [arrangeKey, setArrangeKey] = useState(0) // Trigger re-arrange
   const clearImage = useImageStore((state) => state.clearImage)
   const imageUrl = useImageStore((state) => state.imageUrl)
 
   // Z-index management:
+  // - BackgroundCanvas: z-10 (fixed in BackgroundCanvas component)
+  // - Canvas Controls: z-20 (fixed in BackgroundCanvas component)
+  // - Tool panels: z-40 (base layer for panels)
+  // - Focused panel: z-45 (active/focused panel)
   // - TopBar: z-50 (fixed in TopBar component)
   // - BottomDock: z-50 (fixed in BottomDock component)
-  // - Canvas: z-30 (base layer, always active)
-  // - Tool panels: z-40 (active/focused panel gets z-45)
   const getZIndex = (tool: Tool) => {
-    if (tool === "canvas") return 30
     return focusedPanel === tool ? 45 : 40
   }
 
@@ -75,7 +74,7 @@ export default function PhotoEditorPage() {
     const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 1080
     const availableHeight = viewportHeight - topBarHeight - bottomDockHeight
 
-    const panels = Array.from(openPanels).filter((tool) => tool !== "canvas")
+    const panels = Array.from(openPanels)
     const newPositions: Record<string, PanelPosition> = {}
 
     // Sort panels by size (largest first) for better Tetris packing
@@ -167,31 +166,19 @@ export default function PhotoEditorPage() {
   }
 
   const handleClosePanel = (tool: Tool) => {
-    let shouldResetCanvas = false
-
     setOpenPanels((prev) => {
       const newSet = new Set(prev)
       newSet.delete(tool)
-
-      if (newSet.size === 0) {
-        shouldResetCanvas = true
-        newSet.add("canvas")
-      }
-
       return newSet
     })
-
-    if (shouldResetCanvas) {
-      clearImage()
-    }
 
     if (activeTool === tool) {
       setActiveTool(null)
     }
 
-    // Reset focus to canvas if the closed panel was focused
+    // Reset focus if the closed panel was focused
     if (focusedPanel === tool) {
-      setFocusedPanel("canvas")
+      setFocusedPanel(null)
     }
   }
 
@@ -207,16 +194,10 @@ export default function PhotoEditorPage() {
         showHistoryButton={openPanels.has("history")}
       />
 
-      <main className="flex-1 grid-background overflow-hidden relative" />
+      <main className="flex-1 overflow-hidden relative" />
 
-      {openPanels.has("canvas") && (
-        <Canvas
-          onClose={() => handleClosePanel("canvas")}
-          zIndex={getZIndex("canvas")}
-          isActive={true}
-          onFocus={() => handlePanelFocus("canvas")}
-        />
-      )}
+      {/* Background canvas - always rendered */}
+      <BackgroundCanvas />
 
       {openPanels.has("validator") && (
         <FileValidatorPanel
